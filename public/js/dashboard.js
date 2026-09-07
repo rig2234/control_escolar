@@ -21,7 +21,7 @@ function escaparHtml(valor) {
 }
 
 function nombreEstudiante(estudiante) {
-    return [estudiante.name, estudiante.firstname, estudiante.secondlastname]
+    return [estudiante.name, estudiante.firstlastname, estudiante.secondlastname]
         .filter(Boolean)
         .join(' ');
 }
@@ -291,3 +291,72 @@ confirmPasswordInput.addEventListener('input', () => {
 document.addEventListener('DOMContentLoaded', () => {
     verificarSesion();
 });
+
+// Referencias DOM para el modal de Estudiante
+// MODAL AGREGAR ESTUDIANTE
+const btnAgregarEstudiante = document.getElementById('btnAgregarEstudiante');
+const modalAgregarEstudiante = document.getElementById('modalAgregarEstudiante');
+const btnCerrarModalEstudiante = document.getElementById('btnCerrarModalEstudiante');
+const btnCancelarEstudiante = document.getElementById('btnCancelarEstudiante');
+const formAgregarEstudiante = document.getElementById('formAgregarEstudiante');
+const estError = document.getElementById('estError');
+const estSuccess = document.getElementById('estSuccess');
+
+if (btnAgregarEstudiante) {
+    btnAgregarEstudiante.addEventListener('click', () => {
+        formAgregarEstudiante.reset();
+        estError.textContent = '';
+        estSuccess.textContent = '';
+        modalAgregarEstudiante.classList.remove('hidden');
+    });
+}
+
+function cerrarModalEstudiante() {
+    modalAgregarEstudiante.classList.add('hidden');
+}
+
+if (btnCerrarModalEstudiante) btnCerrarModalEstudiante.addEventListener('click', cerrarModalEstudiante);
+if (btnCancelarEstudiante) btnCancelarEstudiante.addEventListener('click', cerrarModalEstudiante);
+
+if (formAgregarEstudiante) {
+    formAgregarEstudiante.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const datosEstudiante = {
+            name: document.getElementById('estNombre').value.trim(),
+            firstlastname: document.getElementById('estPrimerApellido').value.trim(),
+            secondlastname: document.getElementById('estSegundoApellido').value.trim(),
+            sex: document.getElementById('estSexo').value,
+            idgrade: document.getElementById('estGrado').value,
+            CURP: document.getElementById('estCURP').value.trim(),
+            RFC: document.getElementById('estRFC').value.trim()
+        };
+
+        try {
+            const response = await fetch('/api/estudiantes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datosEstudiante)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                estSuccess.textContent = '¡Estudiante registrado con éxito!';
+                estSuccess.classList.add('show');
+                
+                setTimeout(() => {
+                    cerrarModalEstudiante();
+                    cargarEstudiantes(); // Recarga automáticamente la lista de la tabla
+                }, 1500);
+            } else {
+                estError.textContent = data.error || 'Error al registrar el estudiante';
+                estError.classList.add('show');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            estError.textContent = 'Error de conexión con el servidor';
+            estError.classList.add('show');
+        }
+    });
+}
