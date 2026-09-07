@@ -13,7 +13,9 @@ const pool = require('./config/database');
 
 // Rutas API
 const userRoutes = require('./routes/userRoutes');
+const studentRoutes = require('./routes/studentRoutes');
 app.use('/api/usuarios', userRoutes);
+app.use('/api/estudiantes', studentRoutes);
 
 // Rutas de vistas
 app.get('/login', (req, res) => {

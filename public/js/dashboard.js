@@ -9,6 +9,62 @@ const modal = document.getElementById('modalCambiarContraseña');
 const btnCerrarModal = document.getElementById('btnCerrarModal');
 const btnCancelar = document.getElementById('btnCancelar');
 const formCambiarContraseña = document.getElementById('formCambiarContraseña');
+const estudiantesBody = document.getElementById('estudiantesBody');
+
+function escaparHtml(valor) {
+    return String(valor ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function nombreEstudiante(estudiante) {
+    return [estudiante.name, estudiante.firstname, estudiante.secondlastname]
+        .filter(Boolean)
+        .join(' ');
+}
+
+function renderizarEstudiantes(estudiantes) {
+    if (!estudiantes.length) {
+        estudiantesBody.innerHTML = '<tr><td colspan="6">No hay estudiantes registrados.</td></tr>';
+        return;
+    }
+
+    estudiantesBody.innerHTML = estudiantes.map(estudiante => `
+        <tr>
+            <td>#${escaparHtml(estudiante.id)}</td>
+            <td>${escaparHtml(nombreEstudiante(estudiante))}</td>
+            <td>${escaparHtml(estudiante.sex || '-')}</td>
+            <td>${escaparHtml(estudiante.idgrade || '-')}</td>
+            <td><span class="badge ${estudiante.status ? 'badge-success' : 'badge-warning'}">
+                ${estudiante.status ? 'Activo' : 'Inactivo'}
+            </span></td>
+            <td>
+                <button class="btn-sm btn-info" type="button">Ver</button>
+                <button class="btn-sm btn-warning" type="button">Editar</button>
+                <button class="btn-sm btn-danger" type="button">Eliminar</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function cargarEstudiantes() {
+    try {
+        const response = await fetch('/api/estudiantes');
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'No se pudieron cargar los estudiantes');
+        }
+
+        renderizarEstudiantes(data);
+    } catch (error) {
+        console.error('Error al cargar estudiantes:', error);
+        estudiantesBody.innerHTML = '<tr><td colspan="6">No se pudieron cargar los estudiantes.</td></tr>';
+    }
+}
 
 // Verificar si el usuario está logueado
 function verificarSesion() {
@@ -65,6 +121,10 @@ navLinks.forEach(link => {
         const section = document.getElementById(sectionId);
         if (section) {
             section.classList.add('active');
+
+            if (sectionId === 'estudiantes') {
+                cargarEstudiantes();
+            }
             
             // Actualizar título
             document.getElementById('pageTitle').textContent = 
