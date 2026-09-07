@@ -1,7 +1,10 @@
 const Student = require('../models/Student');
 
-// Expresión regular oficial para validar la CURP mexicana
-const REGEX_CURP = /^[A-Z]{4}\d{6}[HM][A-Z]{2}[B-DF-HJ-NP-TV-Z]{3}[A-Z0-9]\d$/;
+// Regex para CURP (18 caracteres)
+const REGEX_CURP = /^[A-Z]{4}\d{6}[HM][A-Z]{2}[B-DF-HJ-NP-TV-Z]{3}[A-Z0-9]\d$/i;
+
+// Regex para RFC de Persona Física (14 caracteres o 13 según formato con homoclave: 4 letras, 6 dígitos, 3 homoclave)
+const REGEX_RFC = /^[A-Z&Ñ]{4}\d{6}[A-Z0-9]{3}$/i;
 
 exports.listarEstudiantes = async (req, res) => {
   try {
@@ -15,24 +18,31 @@ exports.listarEstudiantes = async (req, res) => {
 
 exports.crearEstudiante = async (req, res) => {
   try {
-    const { name, firstlastname, CURP } = req.body;
+    const { name, firstlastname, CURP, RFC } = req.body;
 
-    // 1. Validar campos obligatorios
+    // Validación de campos obligatorios
     if (!name || !firstlastname) {
       return res.status(400).json({ error: 'El nombre y primer apellido son obligatorios.' });
     }
 
-    // 2. Validar formato de CURP si se envió
-    if (CURP && !REGEX_CURP.test(CURP.toUpperCase())) {
+    // Validación de formato de CURP
+    if (CURP && !REGEX_CURP.test(CURP.trim())) {
       return res.status(400).json({ error: 'El formato de la CURP es inválido.' });
     }
 
-    // 3. Crear el estudiante en la base de datos
+    // Validación de formato de RFC (solo si se proporciona)
+    if (RFC && RFC.trim() !== '' && !REGEX_RFC.test(RFC.trim())) {
+      return res.status(400).json({ error: 'El formato del RFC es inválido. Debe contener 13 caracteres (4 letras, 6 números, 3 alfanuméricos).' });
+    }
+
     const nuevoEstudiante = await Student.crear(req.body);
     res.status(201).json({ mensaje: 'Estudiante creado exitosamente', id: nuevoEstudiante.id });
 
   } catch (error) {
     console.error('Error al crear estudiante:', error);
-    res.status(500).json({ error: 'No se pudo guardar el estudiante' });
+    res.status(500).json({ 
+      error: 'No se pudo guardar el estudiante', 
+      detalle: error.message 
+    });
   }
 };
