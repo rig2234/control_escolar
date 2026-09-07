@@ -8,7 +8,7 @@ class Student {
       SELECT
         id,
         name,
-        firstname,
+        firstlastname,
         secondlastname,
         sex,
         idgrade,
