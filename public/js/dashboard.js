@@ -11,6 +11,27 @@ const btnCancelar = document.getElementById('btnCancelar');
 const formCambiarContraseña = document.getElementById('formCambiarContraseña');
 const estudiantesBody = document.getElementById('estudiantesBody');
 
+// Elementos del Modal de Agregar / Editar Estudiante
+const btnAgregarEstudiante = document.getElementById('btnAgregarEstudiante');
+const modalAgregarEstudiante = document.getElementById('modalAgregarEstudiante');
+const modalEstudianteTitulo = document.getElementById('modalEstudianteTitulo') || document.getElementById('modalAgregarEstudianteTitulo');
+const btnCerrarModalEstudiante = document.getElementById('btnCerrarModalEstudiante');
+const btnCancelarEstudiante = document.getElementById('btnCancelarEstudiante');
+const formAgregarEstudiante = document.getElementById('formAgregarEstudiante');
+const estError = document.getElementById('estError');
+const estSuccess = document.getElementById('estSuccess');
+
+// Elementos del Modal de Eliminación
+const modalEliminar = document.getElementById('modalEliminarEstudiante');
+const btnCerrarModalEliminar = document.getElementById('btnCerrarModalEliminar');
+const btnCancelarEliminar = document.getElementById('btnCancelarEliminar');
+const btnConfirmarEliminar = document.getElementById('btnConfirmarEliminar');
+const nombreEstudianteEliminar = document.getElementById('nombreEstudianteEliminar');
+
+// Variables globales de estado
+let estudianteIdAEliminar = null;
+let editandoId = null; // Controla si guardamos vía POST (crear) o PUT (editar)
+
 function escaparHtml(valor) {
     return String(valor ?? '')
         .replace(/&/g, '&amp;')
@@ -26,18 +47,9 @@ function nombreEstudiante(estudiante) {
         .join(' ');
 }
 
-// Variable para almacenar temporalmente el ID del estudiante a eliminar
-let estudianteIdAEliminar = null;
-
-// Elementos del Modal de Eliminación
-const modalEliminar = document.getElementById('modalEliminarEstudiante');
-const btnCerrarModalEliminar = document.getElementById('btnCerrarModalEliminar');
-const btnCancelarEliminar = document.getElementById('btnCancelarEliminar');
-const btnConfirmarEliminar = document.getElementById('btnConfirmarEliminar');
-const nombreEstudianteEliminar = document.getElementById('nombreEstudianteEliminar');
-
+// Renderizar tabla de estudiantes
 function renderizarEstudiantes(estudiantes) {
-    if (!estudiantes.length) {
+    if (!estudiantes || !estudiantes.length) {
         estudiantesBody.innerHTML = '<tr><td colspan="6">No hay estudiantes registrados.</td></tr>';
         return;
     }
@@ -55,7 +67,7 @@ function renderizarEstudiantes(estudiantes) {
             </span></td>
             <td>
                 <button class="btn-sm btn-info" type="button">Ver</button>
-                <button class="btn-sm btn-warning" type="button">Editar</button>
+                <button class="btn-sm btn-warning" type="button" onclick="abrirModalEditar(${estudiante.id})">Editar</button>
                 <button class="btn-sm btn-danger" type="button" onclick="abrirModalEliminar(${estudiante.id}, '${escaparHtml(nombreComp)}')">
                     Eliminar
                 </button>
@@ -64,52 +76,7 @@ function renderizarEstudiantes(estudiantes) {
     `}).join('');
 }
 
-// Abrir el modal y guardar el ID seleccionado
-function abrirModalEliminar(id, nombreCompleto) {
-    estudianteIdAEliminar = id;
-    nombreEstudianteEliminar.textContent = nombreCompleto;
-    modalEliminar.classList.remove('hidden');
-}
-
-// Cerrar modal
-function cerrarModalEliminar() {
-    modalEliminar.classList.add('hidden');
-    estudianteIdAEliminar = null;
-}
-
-// Event Listeners para cerrar el modal
-btnCerrarModalEliminar.addEventListener('click', cerrarModalEliminar);
-btnCancelarEliminar.addEventListener('click', cerrarModalEliminar);
-modalEliminar.addEventListener('click', (e) => {
-    if (e.target === modalEliminar) cerrarModalEliminar();
-});
-
-// Confirmar la eliminación desde el botón del modal
-btnConfirmarEliminar.addEventListener('click', async () => {
-    if (!estudianteIdAEliminar) return;
-
-    try {
-        const response = await fetch(`/api/estudiantes/${estudianteIdAEliminar}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            cerrarModalEliminar();
-            cargarEstudiantes(); // Recargar la lista
-        } else {
-            alert(`Error: ${data.error || 'No se pudo eliminar el estudiante'}`);
-        }
-    } catch (error) {
-        console.error('Error al eliminar estudiante:', error);
-        alert('Ocurrió un error de conexión al intentar eliminar.');
-    }
-});
-
+// Cargar la lista de estudiantes desde la API
 async function cargarEstudiantes() {
     try {
         const response = await fetch('/api/estudiantes');
@@ -126,43 +93,166 @@ async function cargarEstudiantes() {
     }
 }
 
-async function eliminarEstudiante(id, nombreCompleto) {
-    // Confirmación mostrando el nombre exacto del estudiante
-    const confirmacion = confirm(`¿Estás seguro de que deseas eliminar al estudiante "${nombreCompleto}"?`);
+// --- MODAL ELIMINAR ---
+function abrirModalEliminar(id, nombreCompleto) {
+    estudianteIdAEliminar = id;
+    if (nombreEstudianteEliminar) nombreEstudianteEliminar.textContent = nombreCompleto;
+    if (modalEliminar) modalEliminar.classList.remove('hidden');
+}
 
-    if (!confirmacion) return;
+function cerrarModalEliminar() {
+    if (modalEliminar) modalEliminar.classList.add('hidden');
+    estudianteIdAEliminar = null;
+}
 
-    try {
-        const response = await fetch(`/api/estudiantes/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
+if (btnCerrarModalEliminar) btnCerrarModalEliminar.addEventListener('click', cerrarModalEliminar);
+if (btnCancelarEliminar) btnCancelarEliminar.addEventListener('click', cerrarModalEliminar);
+if (modalEliminar) {
+    modalEliminar.addEventListener('click', (e) => {
+        if (e.target === modalEliminar) cerrarModalEliminar();
+    });
+}
+
+if (btnConfirmarEliminar) {
+    btnConfirmarEliminar.addEventListener('click', async () => {
+        if (!estudianteIdAEliminar) return;
+
+        try {
+            const response = await fetch(`/api/estudiantes/${estudianteIdAEliminar}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                cerrarModalEliminar();
+                cargarEstudiantes();
+            } else {
+                alert(`Error: ${data.error || 'No se pudo eliminar el estudiante'}`);
             }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            alert(data.mensaje);
-            // Recargar la tabla para refrescar los datos
-            cargarEstudiantes();
-        } else {
-            alert(`Error: ${data.error || 'No se pudo eliminar el estudiante'}`);
+        } catch (error) {
+            console.error('Error al eliminar estudiante:', error);
+            alert('Ocurrió un error de conexión al intentar eliminar.');
         }
+    });
+}
+
+// --- MODAL CREAR / EDITAR ESTUDIANTE ---
+function cerrarModalEstudiante() {
+    if (modalAgregarEstudiante) modalAgregarEstudiante.classList.add('hidden');
+    if (formAgregarEstudiante) formAgregarEstudiante.reset();
+    editandoId = null;
+    if (estError) { estError.textContent = ''; estError.classList.remove('show'); }
+    if (estSuccess) { estSuccess.textContent = ''; estSuccess.classList.remove('show'); }
+}
+
+function abrirModalCrear() {
+    cerrarModalEstudiante();
+    if (modalEstudianteTitulo) modalEstudianteTitulo.textContent = 'Agregar Estudiante';
+    if (modalAgregarEstudiante) modalAgregarEstudiante.classList.remove('hidden');
+}
+
+if (btnAgregarEstudiante) btnAgregarEstudiante.addEventListener('click', abrirModalCrear);
+if (btnCerrarModalEstudiante) btnCerrarModalEstudiante.addEventListener('click', cerrarModalEstudiante);
+if (btnCancelarEstudiante) btnCancelarEstudiante.addEventListener('click', cerrarModalEstudiante);
+if (modalAgregarEstudiante) {
+    modalAgregarEstudiante.addEventListener('click', (e) => {
+        if (e.target === modalAgregarEstudiante) cerrarModalEstudiante();
+    });
+}
+
+// Abrir el modal rellenando los campos traídos de la BD
+async function abrirModalEditar(id) {
+    try {
+        const response = await fetch(`/api/estudiantes/${id}`);
+        const estudiante = await response.json();
+
+        if (!response.ok) {
+            alert(estudiante.error || 'No se pudieron obtener los datos del estudiante');
+            return;
+        }
+
+        editandoId = id;
+
+        // Rellenar los inputs usando los IDs est*
+        document.getElementById('estNombre').value = estudiante.name || '';
+        document.getElementById('estPrimerApellido').value = estudiante.firstlastname || '';
+        document.getElementById('estSegundoApellido').value = estudiante.secondlastname || '';
+        document.getElementById('estSexo').value = estudiante.sex || '';
+        document.getElementById('estGrado').value = estudiante.idgrade || '';
+        document.getElementById('estCURP').value = estudiante.CURP || '';
+        document.getElementById('estRFC').value = estudiante.RFC || '';
+
+        if (modalEstudianteTitulo) modalEstudianteTitulo.textContent = 'Editar Estudiante';
+        if (modalAgregarEstudiante) modalAgregarEstudiante.classList.remove('hidden');
     } catch (error) {
-        console.error('Error al eliminar estudiante:', error);
-        alert('Ocurrió un error de conexión al intentar eliminar.');
+        console.error('Error al obtener estudiante:', error);
+        alert('Error de conexión al cargar el estudiante');
     }
 }
 
-// Verificar si el usuario está logueado
+// Guardar datos (POST si es nuevo, PUT si editandoId tiene valor)
+if (formAgregarEstudiante) {
+    formAgregarEstudiante.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const datosEstudiante = {
+            name: document.getElementById('estNombre').value.trim(),
+            firstlastname: document.getElementById('estPrimerApellido').value.trim(),
+            secondlastname: document.getElementById('estSegundoApellido').value.trim(),
+            sex: document.getElementById('estSexo').value,
+            idgrade: document.getElementById('estGrado').value,
+            CURP: document.getElementById('estCURP').value.trim(),
+            RFC: document.getElementById('estRFC').value.trim()
+        };
+
+        const url = editandoId ? `/api/estudiantes/${editandoId}` : '/api/estudiantes';
+        const metodo = editandoId ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datosEstudiante)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                if (estSuccess) {
+                    estSuccess.textContent = editandoId ? '¡Estudiante actualizado con éxito!' : '¡Estudiante registrado con éxito!';
+                    estSuccess.classList.add('show');
+                }
+
+                setTimeout(() => {
+                    cerrarModalEstudiante();
+                    cargarEstudiantes();
+                }, 1200);
+            } else {
+                if (estError) {
+                    estError.textContent = data.error || 'Error al guardar los datos del estudiante';
+                    estError.classList.add('show');
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            if (estError) {
+                estError.textContent = 'Error de conexión con el servidor';
+                estError.classList.add('show');
+            }
+        }
+    });
+}
+
+// --- SESIÓN Y NAVEGACIÓN ---
 function verificarSesion() {
     const usuarioActual = localStorage.getItem('usuarioActual');
     if (!usuarioActual) {
         window.location.href = '/login';
         return;
     }
-    
+
     try {
         const usuario = JSON.parse(usuarioActual);
         mostrarDatosUsuario(usuario);
@@ -172,7 +262,6 @@ function verificarSesion() {
     }
 }
 
-// Mostrar datos del usuario
 function mostrarDatosUsuario(usuario) {
     const userInitial = usuario.login.charAt(0).toUpperCase();
     const userRole = usuario.iduser === 0 ? 'Estudiante' : 'Docente';
@@ -181,31 +270,27 @@ function mostrarDatosUsuario(usuario) {
     document.getElementById('userName').textContent = usuario.login;
     document.getElementById('userRole').textContent = userRole;
     document.getElementById('welcomeName').textContent = usuario.login;
-    
-    // Datos en configuración
+
     document.getElementById('profileLogin').textContent = usuario.login;
     document.getElementById('profileId').textContent = usuario.id;
     document.getElementById('profileStatus').textContent = usuario.status === 1 ? 'Activo' : 'Inactivo';
 }
 
-// Toggle sidebar en móvil
-menuToggle.addEventListener('click', () => {
-    sidebar.classList.toggle('active');
-});
+if (menuToggle) {
+    menuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+    });
+}
 
-// Navegar entre secciones
 navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
-        
-        // Remover clase active de todos los links
+
         navLinks.forEach(l => l.classList.remove('active'));
         link.classList.add('active');
-        
-        // Ocultar todas las secciones
+
         sections.forEach(section => section.classList.remove('active'));
-        
-        // Mostrar sección seleccionada
+
         const sectionId = link.dataset.section;
         const section = document.getElementById(sectionId);
         if (section) {
@@ -214,46 +299,40 @@ navLinks.forEach(link => {
             if (sectionId === 'estudiantes') {
                 cargarEstudiantes();
             }
-            
-            // Actualizar título
-            document.getElementById('pageTitle').textContent = 
+
+            document.getElementById('pageTitle').textContent =
                 link.textContent.trim().toUpperCase();
         }
-        
-        // Cerrar sidebar en móvil
+
         sidebar.classList.remove('active');
     });
 });
 
-// Cerrar sesión
-logoutBtn.addEventListener('click', () => {
-    localStorage.removeItem('usuarioActual');
-    localStorage.removeItem('usuario');
-    window.location.href = '/login';
-});
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('usuarioActual');
+        localStorage.removeItem('usuario');
+        window.location.href = '/login';
+    });
+}
 
-// MODAL - Cambiar contraseña
-btnCambiarContraseña.addEventListener('click', () => {
-    modal.classList.remove('hidden');
-    limpiarFormulario();
-});
+// --- MODAL CAMBIAR CONTRASEÑA ---
+if (btnCambiarContraseña) {
+    btnCambiarContraseña.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        limpiarFormulario();
+    });
+}
 
-btnCerrarModal.addEventListener('click', () => {
-    modal.classList.add('hidden');
-});
+if (btnCerrarModal) btnCerrarModal.addEventListener('click', () => modal.classList.add('hidden'));
+if (btnCancelar) btnCancelar.addEventListener('click', () => modal.classList.add('hidden'));
 
-btnCancelar.addEventListener('click', () => {
-    modal.classList.add('hidden');
-});
+if (modal) {
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.add('hidden');
+    });
+}
 
-// Cerrar modal al hacer click fuera
-modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-        modal.classList.add('hidden');
-    }
-});
-
-// Elementos del formulario
 const passwordActualInput = document.getElementById('passwordActual');
 const passwordNuevaInput = document.getElementById('passwordNueva');
 const confirmPasswordInput = document.getElementById('confirmPassword');
@@ -263,23 +342,16 @@ const confirmPasswordError = document.getElementById('confirmPasswordError');
 const formError = document.getElementById('formError');
 const successMessage = document.getElementById('successMessage');
 
-// Limpiar formulario
 function limpiarFormulario() {
-    formCambiarContraseña.reset();
-    passwordActualError.textContent = '';
-    passwordNuevaError.textContent = '';
-    confirmPasswordError.textContent = '';
-    formError.textContent = '';
-    successMessage.textContent = '';
-    
-    passwordActualError.classList.remove('show');
-    passwordNuevaError.classList.remove('show');
-    confirmPasswordError.classList.remove('show');
-    formError.classList.remove('show');
-    successMessage.classList.remove('show');
+    if (formCambiarContraseña) formCambiarContraseña.reset();
+    [passwordActualError, passwordNuevaError, confirmPasswordError, formError, successMessage].forEach(el => {
+        if (el) {
+            el.textContent = '';
+            el.classList.remove('show');
+        }
+    });
 }
 
-// Validar formulario
 function validarFormularioCambiarContraseña() {
     limpiarFormulario();
     let esValido = true;
@@ -313,191 +385,48 @@ function validarFormularioCambiarContraseña() {
     return esValido;
 }
 
-// Enviar formulario
-formCambiarContraseña.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    if (!validarFormularioCambiarContraseña()) {
-        return;
-    }
-
-    try {
-        const usuario = JSON.parse(localStorage.getItem('usuarioActual'));
-        
-        const response = await fetch(`/api/usuarios/${usuario.id}/cambiar-contraseña`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                passwordActual: passwordActualInput.value,
-                passwordNueva: passwordNuevaInput.value,
-                confirmPassword: confirmPasswordInput.value
-            })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            successMessage.textContent = '¡Contraseña actualizada correctamente!';
-            successMessage.classList.add('show');
-
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                limpiarFormulario();
-            }, 2000);
-        } else {
-            formError.textContent = data.error || 'Error al actualizar la contraseña';
-            formError.classList.add('show');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        formError.textContent = 'Error de conexión';
-        formError.classList.add('show');
-    }
-});
-
-// Limpiar errores al escribir
-passwordActualInput.addEventListener('input', () => {
-    if (passwordActualError.classList.contains('show')) {
-        passwordActualError.classList.remove('show');
-    }
-});
-
-passwordNuevaInput.addEventListener('input', () => {
-    if (passwordNuevaError.classList.contains('show')) {
-        passwordNuevaError.classList.remove('show');
-    }
-});
-
-confirmPasswordInput.addEventListener('input', () => {
-    if (confirmPasswordError.classList.contains('show')) {
-        confirmPasswordError.classList.remove('show');
-    }
-});
-
-// Inicializar cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
-    verificarSesion();
-});
-
-// Referencias DOM para el modal de Estudiante
-// MODAL AGREGAR ESTUDIANTE
-const btnAgregarEstudiante = document.getElementById('btnAgregarEstudiante');
-const modalAgregarEstudiante = document.getElementById('modalAgregarEstudiante');
-const btnCerrarModalEstudiante = document.getElementById('btnCerrarModalEstudiante');
-const btnCancelarEstudiante = document.getElementById('btnCancelarEstudiante');
-const formAgregarEstudiante = document.getElementById('formAgregarEstudiante');
-const estError = document.getElementById('estError');
-const estSuccess = document.getElementById('estSuccess');
-
-if (btnAgregarEstudiante) {
-    btnAgregarEstudiante.addEventListener('click', () => {
-        formAgregarEstudiante.reset();
-        estError.textContent = '';
-        estSuccess.textContent = '';
-        modalAgregarEstudiante.classList.remove('hidden');
-    });
-}
-
-function cerrarModalEstudiante() {
-    modalAgregarEstudiante.classList.add('hidden');
-}
-
-if (btnCerrarModalEstudiante) btnCerrarModalEstudiante.addEventListener('click', cerrarModalEstudiante);
-if (btnCancelarEstudiante) btnCancelarEstudiante.addEventListener('click', cerrarModalEstudiante);
-
-if (formAgregarEstudiante) {
-    formAgregarEstudiante.addEventListener('submit', async (e) => {
+if (formCambiarContraseña) {
+    formCambiarContraseña.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const datosEstudiante = {
-            name: document.getElementById('estNombre').value.trim(),
-            firstlastname: document.getElementById('estPrimerApellido').value.trim(),
-            secondlastname: document.getElementById('estSegundoApellido').value.trim(),
-            sex: document.getElementById('estSexo').value,
-            idgrade: document.getElementById('estGrado').value,
-            CURP: document.getElementById('estCURP').value.trim(),
-            RFC: document.getElementById('estRFC').value.trim()
-        };
+        if (!validarFormularioCambiarContraseña()) return;
 
         try {
-            const response = await fetch('/api/estudiantes', {
-                method: 'POST',
+            const usuario = JSON.parse(localStorage.getItem('usuarioActual'));
+
+            const response = await fetch(`/api/usuarios/${usuario.id}/cambiar-contraseña`, {
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datosEstudiante)
+                body: JSON.stringify({
+                    passwordActual: passwordActualInput.value,
+                    passwordNueva: passwordNuevaInput.value,
+                    confirmPassword: confirmPasswordInput.value
+                })
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                estSuccess.textContent = '¡Estudiante registrado con éxito!';
-                estSuccess.classList.add('show');
-                
+                successMessage.textContent = '¡Contraseña actualizada correctamente!';
+                successMessage.classList.add('show');
+
                 setTimeout(() => {
-                    cerrarModalEstudiante();
-                    cargarEstudiantes(); // Recarga automáticamente la lista de la tabla
-                }, 1500);
+                    modal.classList.add('hidden');
+                    limpiarFormulario();
+                }, 2000);
             } else {
-                estError.textContent = data.error || 'Error al registrar el estudiante';
-                estError.classList.add('show');
+                formError.textContent = data.error || 'Error al actualizar la contraseña';
+                formError.classList.add('show');
             }
         } catch (error) {
             console.error('Error:', error);
-            estError.textContent = 'Error de conexión con el servidor';
-            estError.classList.add('show');
+            formError.textContent = 'Error de conexión';
+            formError.classList.add('show');
         }
     });
 }
 
-// 1. Modificar renderizarEstudiantes para incluir onclick en el botón Editar
-function renderizarEstudiantes(estudiantes) {
-    if (!estudiantes.length) {
-        estudiantesBody.innerHTML = '<tr><td colspan="6">No hay estudiantes registrados.</td></tr>';
-        return;
-    }
-
-    estudiantesBody.innerHTML = estudiantes.map(estudiante => `
-        <tr>
-            <td>#${escaparHtml(estudiante.id)}</td>
-            <td>${escaparHtml(nombreEstudiante(estudiante))}</td>
-            <td>${escaparHtml(estudiante.sex || '-')}</td>
-            <td>${escaparHtml(estudiante.idgrade || '-')}</td>
-            <td><span class="badge ${estudiante.status ? 'badge-success' : 'badge-warning'}">
-                ${estudiante.status ? 'Activo' : 'Inactivo'}
-            </span></td>
-            <td>
-                <button class="btn-sm btn-info" type="button">Ver</button>
-                <button class="btn-sm btn-warning" type="button" onclick="abrirModalEditar(${estudiante.id})">Editar</button>
-                <button class="btn-sm btn-danger" type="button">Eliminar</button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-// 2. Elementos DOM para Editar Estudiante
-function cerrarModalEditar() {
-    modalEditar.classList.add('hidden');
-    formEditar.reset();
-}
-
-btnCerrarModalEditar.addEventListener('click', cerrarModalEditar);
-btnCancelarEditar.addEventListener('click', cerrarModalEditar);
-
-modalEditar.addEventListener('click', (e) => {
-    if (e.target === modalEditar) cerrarModalEditar();
-});
-
-// Enviar cambios
-formEditar.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const id = document.getElementById('editEstudianteId').value;
-    const datos = {
-        name: document.getElementById('editName').value.trim(),
-        firstname: document.getElementById('editFirstname').value.trim(),
-        secondlastname: document.getElementById('editSecondlastname').value.trim(),
-        sex: document.getElementById('editSex').value,
-        idgrade: document.getElementById('editIdgrade').value
-    }; 
+// Inicialización
+document.addEventListener('DOMContentLoaded', () => {
+    verificarSesion();
 });

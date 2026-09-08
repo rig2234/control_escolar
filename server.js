@@ -8,12 +8,12 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Conectar a la base de datos
+// Importar conexión a la base de datos y rutas
 const pool = require('./config/database');
-
-// Rutas API
 const userRoutes = require('./routes/userRoutes');
 const studentRoutes = require('./routes/studentRoutes');
+
+// Rutas API
 app.use('/api/usuarios', userRoutes);
 app.use('/api/estudiantes', studentRoutes);
 
@@ -40,8 +40,26 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Error interno del servidor' });
 });
 
-// Iniciar servidor
+// Iniciar servidor asegurando la conexión previa a SQL Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Servidor corriendo en puerto ${PORT}`);
-});
+
+async function iniciarServidor() {
+    try {
+        // Espera a que el pool de SQL Server se conecte
+        if (pool.connect) {
+            await pool.connect();
+        } else {
+            await pool; // Por si exportas poolPromise desde database.js
+        }
+        console.log('Conectado a SQL Server exitosamente');
+
+        app.listen(PORT, () => {
+            console.log(`Servidor corriendo en el puerto ${PORT}`);
+        });
+    } catch (error) {
+        console.error('Error al conectar con la base de datos:', error);
+        process.exit(1);
+    }
+}
+
+iniciarServidor();

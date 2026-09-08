@@ -4,7 +4,8 @@ const Student = require('../models/Student');
 const REGEX_CURP = /^[A-Z]{4}\d{6}[HM][A-Z]{2}[B-DF-HJ-NP-TV-Z]{3}[A-Z0-9]\d$/i;
 const REGEX_RFC = /^[A-Z&Ñ]{4}\d{6}[A-Z0-9]{3}$/i; // Persona física (13 caracteres)
 
-exports.listarEstudiantes = async (req, res) => {
+// 1. Listar todos los estudiantes
+const listarEstudiantes = async (req, res) => {
   try {
     const estudiantes = await Student.listarTodos();
     res.json(estudiantes);
@@ -14,7 +15,30 @@ exports.listarEstudiantes = async (req, res) => {
   }
 };
 
-exports.crearEstudiante = async (req, res) => {
+// 2. Obtener un estudiante por ID
+const obtenerEstudiante = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ error: 'El ID proporcionado no es válido' });
+    }
+
+    const estudiante = await Student.obtenerPorId(parseInt(id, 10));
+
+    if (!estudiante) {
+      return res.status(404).json({ error: 'Estudiante no encontrado' });
+    }
+
+    res.json(estudiante);
+  } catch (error) {
+    console.error('Error al obtener estudiante:', error);
+    res.status(500).json({ error: 'Error al obtener el estudiante', detalle: error.message });
+  }
+};
+
+// 3. Crear un estudiante
+const crearEstudiante = async (req, res) => {
   try {
     const { name, firstlastname, CURP, RFC } = req.body;
 
@@ -22,12 +46,10 @@ exports.crearEstudiante = async (req, res) => {
       return res.status(400).json({ error: 'El nombre y el primer apellido son requeridos' });
     }
 
-    // Validación opcional de CURP
-    if (CURP && !REGEX_CURP.test(CURP.trim())) {
+    if (CURP && CURP.trim() !== '' && !REGEX_CURP.test(CURP.trim())) {
       return res.status(400).json({ error: 'El formato de la CURP es inválido' });
     }
 
-    // Validación opcional de RFC
     if (RFC && RFC.trim() !== '' && !REGEX_RFC.test(RFC.trim())) {
       return res.status(400).json({ error: 'El formato del RFC es inválido (debe tener 13 caracteres)' });
     }
@@ -43,7 +65,43 @@ exports.crearEstudiante = async (req, res) => {
   }
 };
 
-exports.eliminarEstudiante = async (req, res) => {
+// 4. Actualizar un estudiante
+const actualizarEstudiante = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, firstlastname, CURP, RFC } = req.body;
+
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ error: 'El ID proporcionado no es válido' });
+    }
+
+    if (!name || !firstlastname) {
+      return res.status(400).json({ error: 'El nombre y el primer apellido son requeridos' });
+    }
+
+    if (CURP && CURP.trim() !== '' && !REGEX_CURP.test(CURP.trim())) {
+      return res.status(400).json({ error: 'El formato de la CURP es inválido' });
+    }
+
+    if (RFC && RFC.trim() !== '' && !REGEX_RFC.test(RFC.trim())) {
+      return res.status(400).json({ error: 'El formato del RFC es inválido (debe tener 13 caracteres)' });
+    }
+
+    const actualizado = await Student.actualizar(parseInt(id, 10), req.body);
+
+    if (!actualizado) {
+      return res.status(404).json({ error: 'Estudiante no encontrado para actualizar' });
+    }
+
+    res.json({ mensaje: 'Estudiante actualizado con éxito' });
+  } catch (error) {
+    console.error('Error al actualizar estudiante:', error);
+    res.status(500).json({ error: 'Error al actualizar el estudiante', detalle: error.message });
+  }
+};
+
+// 5. Eliminar un estudiante
+const eliminarEstudiante = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -67,4 +125,13 @@ exports.eliminarEstudiante = async (req, res) => {
     console.error('Error al eliminar estudiante:', error);
     res.status(500).json({ error: 'No se pudo eliminar el estudiante', detalle: error.message });
   }
+};
+
+// Exportación única de todos los controladores
+module.exports = {
+  listarEstudiantes,
+  obtenerEstudiante,
+  crearEstudiante,
+  actualizarEstudiante,
+  eliminarEstudiante
 };
