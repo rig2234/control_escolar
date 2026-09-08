@@ -628,3 +628,26 @@ body {
 .success-message.show {
     display: block;
 }
+
+/* Estilo especial para el botón de eliminar dentro del modal */
+.btn-danger.btn-modal-delete {
+    background-color: var(--danger-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-danger.btn-modal-delete:hover {
+    background-color: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.btn-danger.btn-modal-delete:active {
+    transform: translateY(0);
+}

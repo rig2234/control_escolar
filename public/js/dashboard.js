@@ -26,16 +26,28 @@ function nombreEstudiante(estudiante) {
         .join(' ');
 }
 
+// Variable para almacenar temporalmente el ID del estudiante a eliminar
+let estudianteIdAEliminar = null;
+
+// Elementos del Modal de Eliminación
+const modalEliminar = document.getElementById('modalEliminarEstudiante');
+const btnCerrarModalEliminar = document.getElementById('btnCerrarModalEliminar');
+const btnCancelarEliminar = document.getElementById('btnCancelarEliminar');
+const btnConfirmarEliminar = document.getElementById('btnConfirmarEliminar');
+const nombreEstudianteEliminar = document.getElementById('nombreEstudianteEliminar');
+
 function renderizarEstudiantes(estudiantes) {
     if (!estudiantes.length) {
         estudiantesBody.innerHTML = '<tr><td colspan="6">No hay estudiantes registrados.</td></tr>';
         return;
     }
 
-    estudiantesBody.innerHTML = estudiantes.map(estudiante => `
+    estudiantesBody.innerHTML = estudiantes.map(estudiante => {
+        const nombreComp = nombreEstudiante(estudiante);
+        return `
         <tr>
             <td>#${escaparHtml(estudiante.id)}</td>
-            <td>${escaparHtml(nombreEstudiante(estudiante))}</td>
+            <td>${escaparHtml(nombreComp)}</td>
             <td>${escaparHtml(estudiante.sex || '-')}</td>
             <td>${escaparHtml(estudiante.idgrade || '-')}</td>
             <td><span class="badge ${estudiante.status ? 'badge-success' : 'badge-warning'}">
@@ -44,11 +56,59 @@ function renderizarEstudiantes(estudiantes) {
             <td>
                 <button class="btn-sm btn-info" type="button">Ver</button>
                 <button class="btn-sm btn-warning" type="button">Editar</button>
-                <button class="btn-sm btn-danger" type="button">Eliminar</button>
+                <button class="btn-sm btn-danger" type="button" onclick="abrirModalEliminar(${estudiante.id}, '${escaparHtml(nombreComp)}')">
+                    Eliminar
+                </button>
             </td>
         </tr>
-    `).join('');
+    `}).join('');
 }
+
+// Abrir el modal y guardar el ID seleccionado
+function abrirModalEliminar(id, nombreCompleto) {
+    estudianteIdAEliminar = id;
+    nombreEstudianteEliminar.textContent = nombreCompleto;
+    modalEliminar.classList.remove('hidden');
+}
+
+// Cerrar modal
+function cerrarModalEliminar() {
+    modalEliminar.classList.add('hidden');
+    estudianteIdAEliminar = null;
+}
+
+// Event Listeners para cerrar el modal
+btnCerrarModalEliminar.addEventListener('click', cerrarModalEliminar);
+btnCancelarEliminar.addEventListener('click', cerrarModalEliminar);
+modalEliminar.addEventListener('click', (e) => {
+    if (e.target === modalEliminar) cerrarModalEliminar();
+});
+
+// Confirmar la eliminación desde el botón del modal
+btnConfirmarEliminar.addEventListener('click', async () => {
+    if (!estudianteIdAEliminar) return;
+
+    try {
+        const response = await fetch(`/api/estudiantes/${estudianteIdAEliminar}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            cerrarModalEliminar();
+            cargarEstudiantes(); // Recargar la lista
+        } else {
+            alert(`Error: ${data.error || 'No se pudo eliminar el estudiante'}`);
+        }
+    } catch (error) {
+        console.error('Error al eliminar estudiante:', error);
+        alert('Ocurrió un error de conexión al intentar eliminar.');
+    }
+});
 
 async function cargarEstudiantes() {
     try {
@@ -63,6 +123,35 @@ async function cargarEstudiantes() {
     } catch (error) {
         console.error('Error al cargar estudiantes:', error);
         estudiantesBody.innerHTML = '<tr><td colspan="6">No se pudieron cargar los estudiantes.</td></tr>';
+    }
+}
+
+async function eliminarEstudiante(id, nombreCompleto) {
+    // Confirmación mostrando el nombre exacto del estudiante
+    const confirmacion = confirm(`¿Estás seguro de que deseas eliminar al estudiante "${nombreCompleto}"?`);
+
+    if (!confirmacion) return;
+
+    try {
+        const response = await fetch(`/api/estudiantes/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert(data.mensaje);
+            // Recargar la tabla para refrescar los datos
+            cargarEstudiantes();
+        } else {
+            alert(`Error: ${data.error || 'No se pudo eliminar el estudiante'}`);
+        }
+    } catch (error) {
+        console.error('Error al eliminar estudiante:', error);
+        alert('Ocurrió un error de conexión al intentar eliminar.');
     }
 }
 
@@ -360,3 +449,55 @@ if (formAgregarEstudiante) {
         }
     });
 }
+
+// 1. Modificar renderizarEstudiantes para incluir onclick en el botón Editar
+function renderizarEstudiantes(estudiantes) {
+    if (!estudiantes.length) {
+        estudiantesBody.innerHTML = '<tr><td colspan="6">No hay estudiantes registrados.</td></tr>';
+        return;
+    }
+
+    estudiantesBody.innerHTML = estudiantes.map(estudiante => `
+        <tr>
+            <td>#${escaparHtml(estudiante.id)}</td>
+            <td>${escaparHtml(nombreEstudiante(estudiante))}</td>
+            <td>${escaparHtml(estudiante.sex || '-')}</td>
+            <td>${escaparHtml(estudiante.idgrade || '-')}</td>
+            <td><span class="badge ${estudiante.status ? 'badge-success' : 'badge-warning'}">
+                ${estudiante.status ? 'Activo' : 'Inactivo'}
+            </span></td>
+            <td>
+                <button class="btn-sm btn-info" type="button">Ver</button>
+                <button class="btn-sm btn-warning" type="button" onclick="abrirModalEditar(${estudiante.id})">Editar</button>
+                <button class="btn-sm btn-danger" type="button">Eliminar</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// 2. Elementos DOM para Editar Estudiante
+function cerrarModalEditar() {
+    modalEditar.classList.add('hidden');
+    formEditar.reset();
+}
+
+btnCerrarModalEditar.addEventListener('click', cerrarModalEditar);
+btnCancelarEditar.addEventListener('click', cerrarModalEditar);
+
+modalEditar.addEventListener('click', (e) => {
+    if (e.target === modalEditar) cerrarModalEditar();
+});
+
+// Enviar cambios
+formEditar.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const id = document.getElementById('editEstudianteId').value;
+    const datos = {
+        name: document.getElementById('editName').value.trim(),
+        firstname: document.getElementById('editFirstname').value.trim(),
+        secondlastname: document.getElementById('editSecondlastname').value.trim(),
+        sex: document.getElementById('editSex').value,
+        idgrade: document.getElementById('editIdgrade').value
+    }; 
+});
