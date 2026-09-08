@@ -65,13 +65,14 @@ function renderizarEstudiantes(estudiantes) {
             <td><span class="badge ${estudiante.status ? 'badge-success' : 'badge-warning'}">
                 ${estudiante.status ? 'Activo' : 'Inactivo'}
             </span></td>
-            <td>
-                <button class="btn-sm btn-info" type="button">Ver</button>
-                <button class="btn-sm btn-warning" type="button" onclick="abrirModalEditar(${estudiante.id})">Editar</button>
-                <button class="btn-sm btn-danger" type="button" onclick="abrirModalEliminar(${estudiante.id}, '${escaparHtml(nombreComp)}')">
-                    Eliminar
-                </button>
-            </td>
+            // Dentro de renderizarEstudiantes:
+<td>
+    <button class="btn-sm btn-info" type="button" onclick="abrirModalVer(${estudiante.id})">Ver</button>
+    <button class="btn-sm btn-warning" type="button" onclick="abrirModalEditar(${estudiante.id})">Editar</button>
+    <button class="btn-sm btn-danger" type="button" onclick="abrirModalEliminar(${estudiante.id}, '${escaparHtml(nombreComp)}')">
+        Eliminar
+    </button>
+</td>
         </tr>
     `}).join('');
 }
@@ -424,6 +425,50 @@ if (formCambiarContraseña) {
             formError.classList.add('show');
         }
     });
+}
+
+// Elementos del Modal Ver Estudiante
+const modalVerEstudiante = document.getElementById('modalVerEstudiante');
+const btnCerrarModalVer = document.getElementById('btnCerrarModalVer');
+const btnCerrarVer = document.getElementById('btnCerrarVer');
+
+function cerrarModalVer() {
+    if (modalVerEstudiante) modalVerEstudiante.classList.add('hidden');
+}
+
+if (btnCerrarModalVer) btnCerrarModalVer.addEventListener('click', cerrarModalVer);
+if (btnCerrarVer) btnCerrarVer.addEventListener('click', cerrarModalVer);
+if (modalVerEstudiante) {
+    modalVerEstudiante.addEventListener('click', (e) => {
+        if (e.target === modalVerEstudiante) cerrarModalVer();
+    });
+}
+
+// Función para consultar la API y poblar el modal
+async function abrirModalVer(id) {
+    try {
+        const response = await fetch(`/api/estudiantes/${id}`);
+        const estudiante = await response.json();
+
+        if (!response.ok) {
+            alert(estudiante.error || 'No se pudieron obtener los datos del estudiante');
+            return;
+        }
+
+        // Asignar los datos recibidos a los spans del modal
+        document.getElementById('verId').textContent = `#${estudiante.id}`;
+        document.getElementById('verNombre').textContent = nombreEstudiante(estudiante) || 'Sin nombre';
+        document.getElementById('verSexo').textContent = estudiante.sex || 'No especificado';
+        document.getElementById('verGrado').textContent = estudiante.idgrade || 'No asignado';
+        document.getElementById('verCURP').textContent = estudiante.CURP || 'N/A';
+        document.getElementById('verRFC').textContent = estudiante.RFC || 'N/A';
+        document.getElementById('verEstado').textContent = estudiante.status ? 'Activo' : 'Inactivo';
+
+        if (modalVerEstudiante) modalVerEstudiante.classList.remove('hidden');
+    } catch (error) {
+        console.error('Error al obtener estudiante para ver:', error);
+        alert('Error de conexión al cargar la información del estudiante');
+    }
 }
 
 // Inicialización
