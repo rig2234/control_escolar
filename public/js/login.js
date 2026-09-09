@@ -16,7 +16,7 @@ const successMessage = document.getElementById('successMessage');
 togglePasswordBtn.addEventListener('click', () => {
     const type = passwordInput.type === 'password' ? 'text' : 'password';
     passwordInput.type = type;
-    togglePasswordBtn.style.color = type === 'text' ? '#667eea' : '#999';
+    togglePasswordBtn.style.color = type === 'text' ? '#0f766e' : '#94a3b8';
 });
 
 // Limpiar mensajes
