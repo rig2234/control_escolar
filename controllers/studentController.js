@@ -4,6 +4,42 @@ const Student = require('../models/Student');
 const REGEX_CURP = /^[A-Z]{4}\d{6}[HM][A-Z]{2}[B-DF-HJ-NP-TV-Z]{3}[A-Z0-9]\d$/i;
 const REGEX_RFC = /^[A-Z&Ñ]{4}\d{6}[A-Z0-9]{3}$/i; // Persona física (13 caracteres)
 
+// Regex para validación de nombres y apellidos
+const REGEX_NOMBRE = /^[a-záéíóúàâäãèêëìîïòôöõùûüüñçA-ZÁÉÍÓÚÀÂÄÃÈÊËÌÎÏÒÔÖÕÙÛÜÜÑÇ\s'-]{2,100}$/;
+
+// Función auxiliar para validar nombres
+function validarNombre(nombre, campo) {
+  if (!nombre || !nombre.trim()) {
+    return { valido: false, error: `${campo} es requerido` };
+  }
+
+  nombre = nombre.trim();
+
+  if (nombre.length < 2) {
+    return { valido: false, error: `${campo} debe tener al menos 2 caracteres` };
+  }
+
+  if (nombre.length > 100) {
+    return { valido: false, error: `${campo} no puede exceder 100 caracteres` };
+  }
+
+  if (!REGEX_NOMBRE.test(nombre)) {
+    return { valido: false, error: `${campo} contiene caracteres inválidos. Solo se permiten letras, espacios, guiones y apóstrofos` };
+  }
+
+  // Validar que no sea solo números o caracteres especiales
+  if (!/[a-záéíóúàâäãèêëìîïòôöõùûüüñçA-ZÁÉÍÓÚÀÂÄÃÈÊËÌÎÏÒÔÖÕÙÛÜÜÑÇ]/.test(nombre)) {
+    return { valido: false, error: `${campo} debe contener al menos una letra` };
+  }
+
+  // Validar que no tenga espacios múltiples consecutivos
+  if (/\s{2,}/.test(nombre)) {
+    return { valido: false, error: `${campo} no puede contener espacios múltiples` };
+  }
+
+  return { valido: true };
+}
+
 // 1. Listar todos los estudiantes
 const listarEstudiantes = async (req, res) => {
   try {
@@ -40,16 +76,34 @@ const obtenerEstudiante = async (req, res) => {
 // 3. Crear un estudiante
 const crearEstudiante = async (req, res) => {
   try {
-    const { name, firstlastname, CURP, RFC } = req.body;
+    const { name, firstlastname, secondlastname, CURP, RFC } = req.body;
 
-    if (!name || !firstlastname) {
-      return res.status(400).json({ error: 'El nombre y el primer apellido son requeridos' });
+    // Validar nombre
+    const validacionNombre = validarNombre(name, 'El nombre');
+    if (!validacionNombre.valido) {
+      return res.status(400).json({ error: validacionNombre.error });
     }
 
+    // Validar primer apellido
+    const validacionPrimerApellido = validarNombre(firstlastname, 'El primer apellido');
+    if (!validacionPrimerApellido.valido) {
+      return res.status(400).json({ error: validacionPrimerApellido.error });
+    }
+
+    // Validar segundo apellido (opcional)
+    if (secondlastname && secondlastname.trim() !== '') {
+      const validacionSegundoApellido = validarNombre(secondlastname, 'El segundo apellido');
+      if (!validacionSegundoApellido.valido) {
+        return res.status(400).json({ error: validacionSegundoApellido.error });
+      }
+    }
+
+    // Validar CURP si se proporciona
     if (CURP && CURP.trim() !== '' && !REGEX_CURP.test(CURP.trim())) {
       return res.status(400).json({ error: 'El formato de la CURP es inválido' });
     }
 
+    // Validar RFC si se proporciona
     if (RFC && RFC.trim() !== '' && !REGEX_RFC.test(RFC.trim())) {
       return res.status(400).json({ error: 'El formato del RFC es inválido (debe tener 13 caracteres)' });
     }
@@ -69,20 +123,38 @@ const crearEstudiante = async (req, res) => {
 const actualizarEstudiante = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, firstlastname, CURP, RFC } = req.body;
+    const { name, firstlastname, secondlastname, CURP, RFC } = req.body;
 
     if (!id || isNaN(id)) {
       return res.status(400).json({ error: 'El ID proporcionado no es válido' });
     }
 
-    if (!name || !firstlastname) {
-      return res.status(400).json({ error: 'El nombre y el primer apellido son requeridos' });
+    // Validar nombre
+    const validacionNombre = validarNombre(name, 'El nombre');
+    if (!validacionNombre.valido) {
+      return res.status(400).json({ error: validacionNombre.error });
     }
 
+    // Validar primer apellido
+    const validacionPrimerApellido = validarNombre(firstlastname, 'El primer apellido');
+    if (!validacionPrimerApellido.valido) {
+      return res.status(400).json({ error: validacionPrimerApellido.error });
+    }
+
+    // Validar segundo apellido (opcional)
+    if (secondlastname && secondlastname.trim() !== '') {
+      const validacionSegundoApellido = validarNombre(secondlastname, 'El segundo apellido');
+      if (!validacionSegundoApellido.valido) {
+        return res.status(400).json({ error: validacionSegundoApellido.error });
+      }
+    }
+
+    // Validar CURP si se proporciona
     if (CURP && CURP.trim() !== '' && !REGEX_CURP.test(CURP.trim())) {
       return res.status(400).json({ error: 'El formato de la CURP es inválido' });
     }
 
+    // Validar RFC si se proporciona
     if (RFC && RFC.trim() !== '' && !REGEX_RFC.test(RFC.trim())) {
       return res.status(400).json({ error: 'El formato del RFC es inválido (debe tener 13 caracteres)' });
     }

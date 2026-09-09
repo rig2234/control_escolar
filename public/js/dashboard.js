@@ -32,6 +32,9 @@ const nombreEstudianteEliminar = document.getElementById('nombreEstudianteElimin
 let estudianteIdAEliminar = null;
 let editandoId = null; // Controla si guardamos vía POST (crear) o PUT (editar)
 
+// Regex para validación de nombres y apellidos
+const REGEX_NOMBRE = /^[a-záéíóúàâäãèêëìîïòôöõùûüüñçA-ZÁÉÍÓÚÀÂÄÃÈÊËÌÎÏÒÔÖÕÙÛÜÜÑÇ\s'-]{2,100}$/;
+
 function escaparHtml(valor) {
     return String(valor ?? '')
         .replace(/&/g, '&amp;')
@@ -45,6 +48,39 @@ function nombreEstudiante(estudiante) {
     return [estudiante.name, estudiante.firstlastname, estudiante.secondlastname]
         .filter(Boolean)
         .join(' ');
+}
+
+// Función para validar nombres y apellidos
+function validarNombre(valor, campo) {
+    valor = valor.trim();
+
+    if (!valor) {
+        return { valido: false, error: `${campo} es requerido` };
+    }
+
+    if (valor.length < 2) {
+        return { valido: false, error: `${campo} debe tener al menos 2 caracteres` };
+    }
+
+    if (valor.length > 100) {
+        return { valido: false, error: `${campo} no puede exceder 100 caracteres` };
+    }
+
+    if (!REGEX_NOMBRE.test(valor)) {
+        return { valido: false, error: `${campo} contiene caracteres inválidos. Solo se permiten letras, espacios, guiones y apóstrofos` };
+    }
+
+    // Validar que no sea solo números o caracteres especiales
+    if (!/[a-záéíóúàâäãèêëìîïòôöõùûüüñçA-ZÁÉÍÓÚÀÂÄÃÈÊËÌÎÏÒÔÖÕÙÛÜÜÑÇ]/.test(valor)) {
+        return { valido: false, error: `${campo} debe contener al menos una letra` };
+    }
+
+    // Validar que no tenga espacios múltiples consecutivos
+    if (/\s{2,}/.test(valor)) {
+        return { valido: false, error: `${campo} no puede contener espacios múltiples` };
+    }
+
+    return { valido: true };
 }
 
 // Renderizar tabla de estudiantes
@@ -193,10 +229,49 @@ async function abrirModalEditar(id) {
     }
 }
 
+// Validar formulario antes de enviar
+function validarFormularioEstudiante() {
+    const nombre = document.getElementById('estNombre').value;
+    const primerApellido = document.getElementById('estPrimerApellido').value;
+    const segundoApellido = document.getElementById('estSegundoApellido').value;
+
+    // Validar nombre
+    const validacionNombre = validarNombre(nombre, 'El nombre');
+    if (!validacionNombre.valido) {
+        return validacionNombre;
+    }
+
+    // Validar primer apellido
+    const validacionPrimerApellido = validarNombre(primerApellido, 'El primer apellido');
+    if (!validacionPrimerApellido.valido) {
+        return validacionPrimerApellido;
+    }
+
+    // Validar segundo apellido (opcional)
+    if (segundoApellido && segundoApellido.trim() !== '') {
+        const validacionSegundoApellido = validarNombre(segundoApellido, 'El segundo apellido');
+        if (!validacionSegundoApellido.valido) {
+            return validacionSegundoApellido;
+        }
+    }
+
+    return { valido: true };
+}
+
 // Guardar datos (POST si es nuevo, PUT si editandoId tiene valor)
 if (formAgregarEstudiante) {
     formAgregarEstudiante.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        // Validar campos en cliente
+        const validacion = validarFormularioEstudiante();
+        if (!validacion.valido) {
+            if (estError) {
+                estError.textContent = validacion.error;
+                estError.classList.add('show');
+            }
+            return;
+        }
 
         const datosEstudiante = {
             name: document.getElementById('estNombre').value.trim(),
