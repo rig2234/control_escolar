@@ -65,7 +65,7 @@ function renderizarEstudiantes(estudiantes) {
             <td><span class="badge ${estudiante.status ? 'badge-success' : 'badge-warning'}">
                 ${estudiante.status ? 'Activo' : 'Inactivo'}
             </span></td>
-            // Dentro de renderizarEstudiantes:
+            
 <td>
     <button class="btn-sm btn-info" type="button" onclick="abrirModalVer(${estudiante.id})">Ver</button>
     <button class="btn-sm btn-warning" type="button" onclick="abrirModalEditar(${estudiante.id})">Editar</button>
