@@ -43,6 +43,14 @@
                     <span>Estudiantes</span>
                 </a>
 
+                <a href="#materias" class="nav-link" data-section="materias">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <span>Materias</span>
+                </a>
+
                 <a href="#calificaciones" class="nav-link" data-section="calificaciones">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
@@ -164,7 +172,7 @@
                         <div class="stat-card">
                             <div class="stat-icon" style="background: #0ea5e9;">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white">
-                                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.3-1.54c-.3-.36-.77-.36-1.07 0-.3.36-.3.95 0 1.31l1.83 2.17c.3.36.77.36 1.07 0l3.29-4.04c.3-.36.3-.95 0-1.31-.3-.36-.77-.36-1.07 0z"></path>
+                                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.3-1.54c-.3-.36-.77-.36-1.07 0-.3.36-.3[...]
                                 </svg>
                             </div>
                             <div class="stat-content">
@@ -244,6 +252,33 @@
                             <tbody id="estudiantesBody">
                                 <tr>
                                     <td colspan="6">Cargando estudiantes...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- MATERIAS SECTION -->
+                <section id="materias" class="section">
+                    <div class="view-header">
+                        <h3>Gestión de Materias</h3>
+                        <button class="btn-primary" id="btnAgregarMateria">+ Agregar Materia</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre de Materia</th>
+                                    <th>Descripción</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="materiasBody">
+                                <tr>
+                                    <td colspan="5">Cargando materias...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -562,47 +597,75 @@
         </div>
     </div>
 
-    <!-- MODAL CONFIRMAR ELIMINACIÓN -->
-     <!-- MODAL CONFIRMAR ELIMINACIÓN -->
-<div id="modalEliminarEstudiante" class="modal hidden">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Confirmar Eliminación</h3>
-            <button class="btn-close" id="btnCerrarModalEliminar">&times;</button>
-        </div>
-        
-        <div class="modal-body" style="padding: 25px 0; text-align: center;">
-            <!-- Ícono de advertencia estilizado -->
-            <div style="width: 60px; height: 60px; background: #fde8e8; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                </svg>
+    <!-- MODAL AGREGAR MATERIA -->
+    <div id="modalAgregarMateria" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Agregar Nueva Materia</h3>
+                <button class="btn-close" id="btnCerrarModalMateria">&times;</button>
             </div>
+            <form id="formAgregarMateria" class="modal-form">
+                <div class="form-group">
+                    <label for="matNombre">Nombre de la Materia *</label>
+                    <input type="text" id="matNombre" required>
+                </div>
 
-            <p style="font-size: 15px; color: #666; margin-bottom: 8px;">
-                ¿Estás seguro de que deseas eliminar al estudiante?
-            </p>
-            <p style="font-size: 18px; font-weight: 700; color: #1a1a1a;" id="nombreEstudianteEliminar">
-                <!-- Nombre del estudiante -->
-            </p>
-            <small style="color: #888; display: block; margin-top: 10px; font-size: 12px;">
-                Esta acción no se puede deshacer.
-            </small>
-        </div>
+                <div class="form-group">
+                    <label for="matDescripcion">Descripción</label>
+                    <textarea id="matDescripcion" rows="4" placeholder="Descripción de la materia..."></textarea>
+                </div>
 
-        <div class="modal-buttons">
-            <button type="button" class="btn-secondary" id="btnCancelarEliminar">Cancelar</button>
-            <button type="button" class="btn-danger btn-modal-delete" id="btnConfirmarEliminar">
-                Eliminar Estudiante
-            </button>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" id="btnCancelarMateria">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Materia</button>
+                </div>
+
+                <span class="error-message" id="matError"></span>
+                <span class="success-message" id="matSuccess"></span>
+            </form>
         </div>
     </div>
-</div>
 
-<!-- MODAL EDITAR ESTUDIANTE -->
+    <!-- MODAL CONFIRMAR ELIMINACIÓN -->
+    <div id="modalEliminarEstudiante" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirmar Eliminación</h3>
+                <button class="btn-close" id="btnCerrarModalEliminar">&times;</button>
+            </div>
+            
+            <div class="modal-body" style="padding: 25px 0; text-align: center;">
+                <!-- Ícono de advertencia estilizado -->
+                <div style="width: 60px; height: 60px; background: #fde8e8; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </div>
+
+                <p style="font-size: 15px; color: #666; margin-bottom: 8px;">
+                    ¿Estás seguro de que deseas eliminar al estudiante?
+                </p>
+                <p style="font-size: 18px; font-weight: 700; color: #1a1a1a;" id="nombreEstudianteEliminar">
+                    <!-- Nombre del estudiante -->
+                </p>
+                <small style="color: #888; display: block; margin-top: 10px; font-size: 12px;">
+                    Esta acción no se puede deshacer.
+                </small>
+            </div>
+
+            <div class="modal-buttons">
+                <button type="button" class="btn-secondary" id="btnCancelarEliminar">Cancelar</button>
+                <button type="button" class="btn-danger btn-modal-delete" id="btnConfirmarEliminar">
+                    Eliminar Estudiante
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR ESTUDIANTE -->
     <div id="modalEditarEstudiante" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -650,24 +713,24 @@
     </div>
 
     <!-- Modal Ver Estudiante -->
-<div id="modalVerEstudiante" class="modal hidden">
-    <div class="modal-content">
-        <span class="close-btn" id="btnCerrarModalVer">&times;</span>
-        <h2>Detalles del Estudiante</h2>
-        <hr><br>
-        <div class="estudiante-detalle">
-            <p><strong>ID:</strong> <span id="verId">-</span></p>
-            <p><strong>Nombre Completo:</strong> <span id="verNombre">-</span></p>
-            <p><strong>Sexo:</strong> <span id="verSexo">-</span></p>
-            <p><strong>Grado:</strong> <span id="verGrado">-</span></p>
-            <p><strong>CURP:</strong> <span id="verCURP">-</span></p>
-            <p><strong>RFC:</strong> <span id="verRFC">-</span></p>
-            <p><strong>Estado:</strong> <span id="verEstado">-</span></p>
+    <div id="modalVerEstudiante" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" id="btnCerrarModalVer">&times;</span>
+            <h2>Detalles del Estudiante</h2>
+            <hr><br>
+            <div class="estudiante-detalle">
+                <p><strong>ID:</strong> <span id="verId">-</span></p>
+                <p><strong>Nombre Completo:</strong> <span id="verNombre">-</span></p>
+                <p><strong>Sexo:</strong> <span id="verSexo">-</span></p>
+                <p><strong>Grado:</strong> <span id="verGrado">-</span></p>
+                <p><strong>CURP:</strong> <span id="verCURP">-</span></p>
+                <p><strong>RFC:</strong> <span id="verRFC">-</span></p>
+                <p><strong>Estado:</strong> <span id="verEstado">-</span></p>
+            </div>
+            <br>
+            <button type="button" class="btn btn-secondary" id="btnCerrarVer">Cerrar</button>
         </div>
-        <br>
-        <button type="button" class="btn btn-secondary" id="btnCerrarVer">Cerrar</button>
     </div>
-</div>
 
     <script src="js/dashboard.js"></script>
 </body>
