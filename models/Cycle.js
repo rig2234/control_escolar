@@ -2,7 +2,7 @@ const sql = require('mssql');
 const pool = require('../config/database');
 
 class Cycle {
-  // Listar todos los ciclos escolares
+  // Listar todos los ciclos escolares activos (Soft Delete)
   static async listarTodos() {
     try {
       const request = new sql.Request(pool);
@@ -16,6 +16,7 @@ class Cycle {
           date,
           status
         FROM cycles
+        WHERE status = 1
         ORDER BY initialdate DESC
       `);
 
@@ -142,7 +143,7 @@ class Cycle {
     }
   }
 
-  // Eliminar un ciclo escolar
+  // Eliminar un ciclo escolar (Soft Delete / Desactivación)
   static async eliminar(id) {
     try {
       const ciclo = await this.obtenerPorId(id);
@@ -153,12 +154,13 @@ class Cycle {
       const request = new sql.Request(pool);
       request.input('id', sql.Int, id);
 
-      await request.query(`DELETE FROM cycles WHERE id = @id`);
+      // Cambiamos el estado a 0 en lugar de eliminar físicamente
+      await request.query(`UPDATE cycles SET status = 0 WHERE id = @id`);
 
       return {
         id,
         name: ciclo.name,
-        mensaje: `El ciclo escolar "${ciclo.name}" ha sido eliminado exitosamente.`
+        mensaje: `El ciclo escolar "${ciclo.name}" ha sido desactivado exitosamente.`
       };
     } catch (error) {
       throw error;
