@@ -51,6 +51,21 @@
                     <span>Materias</span>
                 </a>
 
+                <a href="#ciclosescolares" class="nav-link" data-section="ciclosescolares">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6v6l4 2"></polyline>
+                    </svg>
+                    <span>Ciclos Escolares</span>
+                </a>
+
+                <a href="#maestrias" class="nav-link" data-section="maestrias">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M22 10v6m0 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4m20 0H2m20 0l-5.5-11H7.5L2 10m11 8v.01M12 19a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"></path>
+                    </svg>
+                    <span>Maestrías</span>
+                </a>
+
                 <a href="#calificaciones" class="nav-link" data-section="calificaciones">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
@@ -279,6 +294,62 @@
                             <tbody id="materiasBody">
                                 <tr>
                                     <td colspan="5">Cargando materias...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- CICLOS ESCOLARES SECTION -->
+                <section id="ciclosescolares" class="section">
+                    <div class="view-header">
+                        <h3>Gestión de Ciclos Escolares</h3>
+                        <button class="btn-primary" id="btnAgregarCiclo">+ Agregar Ciclo Escolar</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre del Ciclo</th>
+                                    <th>Año Inicio</th>
+                                    <th>Año Fin</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ciclosBody">
+                                <tr>
+                                    <td colspan="6">Cargando ciclos escolares...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- MAESTRÍAS SECTION -->
+                <section id="maestrias" class="section">
+                    <div class="view-header">
+                        <h3>Gestión de Maestrías</h3>
+                        <button class="btn-primary" id="btnAgregarMaestria">+ Agregar Maestría</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre de Maestría</th>
+                                    <th>Descripción</th>
+                                    <th>Duración (Semestres)</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="maestriasBody">
+                                <tr>
+                                    <td colspan="6">Cargando maestrías...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -539,196 +610,81 @@
         </div>
     </div>
 
-    <!-- MODAL AGREGAR ESTUDIANTE -->
-    <div id="modalAgregarEstudiante" class="modal hidden">
+    <!-- MODAL AGREGAR CICLO ESCOLAR -->
+    <div id="modalAgregarCiclo" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Agregar Nuevo Estudiante</h3>
-                <button class="btn-close" id="btnCerrarModalEstudiante">&times;</button>
+                <h3>Agregar Ciclo Escolar</h3>
+                <button class="btn-close" id="btnCerrarModalCiclo">&times;</button>
             </div>
-            <form id="formAgregarEstudiante" class="modal-form">
+            <form id="formAgregarCiclo" class="modal-form">
                 <div class="form-group">
-                    <label for="estNombre">Nombre(s) *</label>
-                    <input type="text" id="estNombre" required>
+                    <label for="cicloNombre">Nombre del Ciclo *</label>
+                    <input type="text" id="cicloNombre" placeholder="Ej: 2024-2025" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="estPrimerApellido">Primer Apellido *</label>
-                    <input type="text" id="estPrimerApellido" required>
+                    <label for="cicloAnioInicio">Año de Inicio *</label>
+                    <input type="number" id="cicloAnioInicio" min="2000" max="2100" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="estSegundoApellido">Segundo Apellido</label>
-                    <input type="text" id="estSegundoApellido">
+                    <label for="cicloAnioFin">Año de Fin *</label>
+                    <input type="number" id="cicloAnioFin" min="2000" max="2100" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="estSexo">Sexo</label>
-                    <select id="estSexo">
-                        <option value="">Seleccionar...</option>
-                        <option value="M">Masculino</option>
-                        <option value="F">Femenino</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="estGrado">Grado (ID)</label>
-                    <input type="number" id="estGrado" placeholder="Ej. 1">
-                </div>
-
-                <div class="form-group">
-                    <label for="estCURP">CURP</label>
-                    <input type="text" id="estCURP" maxlength="18">
-                </div>
-
-                <div class="form-group">
-                    <label for="estRFC">RFC</label>
-                    <input type="text" id="estRFC" maxlength="13">
+                    <label for="cicloDescripcion">Descripción</label>
+                    <textarea id="cicloDescripcion" rows="3" placeholder="Descripción del ciclo escolar..."></textarea>
                 </div>
 
                 <div class="modal-buttons">
-                    <button type="button" class="btn-secondary" id="btnCancelarEstudiante">Cancelar</button>
-                    <button type="submit" class="btn-primary">Guardar Estudiante</button>
+                    <button type="button" class="btn-secondary" id="btnCancelarCiclo">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Ciclo</button>
                 </div>
 
-                <span class="error-message" id="estError"></span>
-                <span class="success-message" id="estSuccess"></span>
+                <span class="error-message" id="cicloError"></span>
+                <span class="success-message" id="cicloSuccess"></span>
             </form>
         </div>
     </div>
 
-    <!-- MODAL AGREGAR MATERIA -->
-    <div id="modalAgregarMateria" class="modal hidden">
+    <!-- MODAL AGREGAR MAESTRÍA -->
+    <div id="modalAgregarMaestria" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Agregar Nueva Materia</h3>
-                <button class="btn-close" id="btnCerrarModalMateria">&times;</button>
+                <h3>Agregar Maestría</h3>
+                <button class="btn-close" id="btnCerrarModalMaestria">&times;</button>
             </div>
-            <form id="formAgregarMateria" class="modal-form">
+            <form id="formAgregarMaestria" class="modal-form">
                 <div class="form-group">
-                    <label for="matNombre">Nombre de la Materia *</label>
-                    <input type="text" id="matNombre" required>
+                    <label for="maestriaNombre">Nombre de la Maestría *</label>
+                    <input type="text" id="maestriaNombre" placeholder="Ej: Maestría en Administración" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="matDescripcion">Descripción</label>
-                    <textarea id="matDescripcion" rows="4" placeholder="Descripción de la materia..."></textarea>
+                    <label for="maestriaDescripcion">Descripción</label>
+                    <textarea id="maestriaDescripcion" rows="3" placeholder="Descripción de la maestría..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="maestriaDuracion">Duración (en Semestres) *</label>
+                    <input type="number" id="maestriaDuracion" min="1" max="12" placeholder="Ej: 4" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="maestriaCreditos">Créditos Totales</label>
+                    <input type="number" id="maestriaCreditos" min="1" placeholder="Ej: 120">
                 </div>
 
                 <div class="modal-buttons">
-                    <button type="button" class="btn-secondary" id="btnCancelarMateria">Cancelar</button>
-                    <button type="submit" class="btn-primary">Guardar Materia</button>
+                    <button type="button" class="btn-secondary" id="btnCancelarMaestria">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Maestría</button>
                 </div>
 
-                <span class="error-message" id="matError"></span>
-                <span class="success-message" id="matSuccess"></span>
+                <span class="error-message" id="maestriaError"></span>
+                <span class="success-message" id="maestriaSuccess"></span>
             </form>
-        </div>
-    </div>
-
-    <!-- MODAL CONFIRMAR ELIMINACIÓN -->
-    <div id="modalEliminarEstudiante" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Confirmar Eliminación</h3>
-                <button class="btn-close" id="btnCerrarModalEliminar">&times;</button>
-            </div>
-            
-            <div class="modal-body" style="padding: 25px 0; text-align: center;">
-                <!-- Ícono de advertencia estilizado -->
-                <div style="width: 60px; height: 60px; background: #fde8e8; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        <line x1="10" y1="11" x2="10" y2="17"></line>
-                        <line x1="14" y1="11" x2="14" y2="17"></line>
-                    </svg>
-                </div>
-
-                <p style="font-size: 15px; color: #666; margin-bottom: 8px;">
-                    ¿Estás seguro de que deseas eliminar al estudiante?
-                </p>
-                <p style="font-size: 18px; font-weight: 700; color: #1a1a1a;" id="nombreEstudianteEliminar">
-                    <!-- Nombre del estudiante -->
-                </p>
-                <small style="color: #888; display: block; margin-top: 10px; font-size: 12px;">
-                    Esta acción no se puede deshacer.
-                </small>
-            </div>
-
-            <div class="modal-buttons">
-                <button type="button" class="btn-secondary" id="btnCancelarEliminar">Cancelar</button>
-                <button type="button" class="btn-danger btn-modal-delete" id="btnConfirmarEliminar">
-                    Eliminar Estudiante
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL EDITAR ESTUDIANTE -->
-    <div id="modalEditarEstudiante" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Editar Estudiante</h3>
-                <button class="btn-close" id="btnCerrarModalEditar">&times;</button>
-            </div>
-            <form id="formEditarEstudiante" class="modal-form">
-                <input type="hidden" id="editEstudianteId">
-
-                <div class="form-group">
-                    <label for="editName">Nombre(s) *</label>
-                    <input type="text" id="editName" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="editFirstname">Primer Apellido *</label>
-                    <input type="text" id="editFirstname" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="editSecondlastname">Segundo Apellido</label>
-                    <input type="text" id="editSecondlastname">
-                </div>
-
-                <div class="form-group">
-                    <label for="editSex">Sexo</label>
-                    <select id="editSex" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px;">
-                        <option value="">Seleccionar</option>
-                        <option value="H">Hombre</option>
-                        <option value="M">Mujer</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="editIdgrade">Grado</label>
-                    <input type="number" id="editIdgrade" min="1" max="12">
-                </div>
-
-                <div class="modal-buttons">
-                    <button type="button" class="btn-secondary" id="btnCancelarEditar">Cancelar</button>
-                    <button type="submit" class="btn-primary">Guardar Cambios</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal Ver Estudiante -->
-    <div id="modalVerEstudiante" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-btn" id="btnCerrarModalVer">&times;</span>
-            <h2>Detalles del Estudiante</h2>
-            <hr><br>
-            <div class="estudiante-detalle">
-                <p><strong>ID:</strong> <span id="verId">-</span></p>
-                <p><strong>Nombre Completo:</strong> <span id="verNombre">-</span></p>
-                <p><strong>Sexo:</strong> <span id="verSexo">-</span></p>
-                <p><strong>Grado:</strong> <span id="verGrado">-</span></p>
-                <p><strong>CURP:</strong> <span id="verCURP">-</span></p>
-                <p><strong>RFC:</strong> <span id="verRFC">-</span></p>
-                <p><strong>Estado:</strong> <span id="verEstado">-</span></p>
-            </div>
-            <br>
-            <button type="button" class="btn btn-secondary" id="btnCerrarVer">Cerrar</button>
         </div>
     </div>
 
