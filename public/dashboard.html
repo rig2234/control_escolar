@@ -688,6 +688,175 @@
         </div>
     </div>
 
+    <!-- MODAL AGREGAR ESTUDIANTE -->
+    <div id="modalAgregarEstudiante" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Agregar Nuevo Estudiante</h3>
+                <button class="btn-close" id="btnCerrarModalEstudiante">&times;</button>
+            </div>
+            <form id="formAgregarEstudiante" class="modal-form">
+                <div class="form-group">
+                    <label for="estNombre">Nombre(s) *</label>
+                    <input type="text" id="estNombre" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="estPrimerApellido">Primer Apellido *</label>
+                    <input type="text" id="estPrimerApellido" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="estSegundoApellido">Segundo Apellido</label>
+                    <input type="text" id="estSegundoApellido">
+                </div>
+
+                <div class="form-group">
+                    <label for="estSexo">Sexo</label>
+                    <select id="estSexo">
+                        <option value="">Seleccionar...</option>
+                        <option value="M">Masculino</option>
+                        <option value="F">Femenino</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="estGrado">Grado (ID)</label>
+                    <input type="number" id="estGrado" placeholder="Ej. 1">
+                </div>
+
+                <div class="form-group">
+                    <label for="estCURP">CURP</label>
+                    <input type="text" id="estCURP" maxlength="18">
+                </div>
+
+                <div class="form-group">
+                    <label for="estRFC">RFC</label>
+                    <input type="text" id="estRFC" maxlength="13">
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" id="btnCancelarEstudiante">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Estudiante</button>
+                </div>
+
+                <span class="error-message" id="estError"></span>
+                <span class="success-message" id="estSuccess"></span>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMAR ELIMINACIÓN -->
+     <!-- MODAL CONFIRMAR ELIMINACIÓN -->
+<div id="modalEliminarEstudiante" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Confirmar Eliminación</h3>
+            <button class="btn-close" id="btnCerrarModalEliminar">&times;</button>
+        </div>
+        
+        <div class="modal-body" style="padding: 25px 0; text-align: center;">
+            <!-- Ícono de advertencia estilizado -->
+            <div style="width: 60px; height: 60px; background: #fde8e8; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+            </div>
+
+            <p style="font-size: 15px; color: #666; margin-bottom: 8px;">
+                ¿Estás seguro de que deseas eliminar al estudiante?
+            </p>
+            <p style="font-size: 18px; font-weight: 700; color: #1a1a1a;" id="nombreEstudianteEliminar">
+                <!-- Nombre del estudiante -->
+            </p>
+            <small style="color: #888; display: block; margin-top: 10px; font-size: 12px;">
+                Esta acción no se puede deshacer.
+            </small>
+        </div>
+
+        <div class="modal-buttons">
+            <button type="button" class="btn-secondary" id="btnCancelarEliminar">Cancelar</button>
+            <button type="button" class="btn-danger btn-modal-delete" id="btnConfirmarEliminar">
+                Eliminar Estudiante
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL EDITAR ESTUDIANTE -->
+    <div id="modalEditarEstudiante" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Estudiante</h3>
+                <button class="btn-close" id="btnCerrarModalEditar">&times;</button>
+            </div>
+            <form id="formEditarEstudiante" class="modal-form">
+                <input type="hidden" id="editEstudianteId">
+
+                <div class="form-group">
+                    <label for="editName">Nombre(s) *</label>
+                    <input type="text" id="editName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="editFirstname">Primer Apellido *</label>
+                    <input type="text" id="editFirstname" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="editSecondlastname">Segundo Apellido</label>
+                    <input type="text" id="editSecondlastname">
+                </div>
+
+                <div class="form-group">
+                    <label for="editSex">Sexo</label>
+                    <select id="editSex" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px;">
+                        <option value="">Seleccionar</option>
+                        <option value="H">Hombre</option>
+                        <option value="M">Mujer</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="editIdgrade">Grado</label>
+                    <input type="number" id="editIdgrade" min="1" max="12">
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" id="btnCancelarEditar">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Ver Estudiante -->
+<div id="modalVerEstudiante" class="modal hidden">
+    <div class="modal-content">
+        <span class="close-btn" id="btnCerrarModalVer">&times;</span>
+        <h2>Detalles del Estudiante</h2>
+
+
+
+        
+        <hr><br>
+        <div class="estudiante-detalle">
+            <p><strong>ID:</strong> <span id="verId">-</span></p>
+            <p><strong>Nombre Completo:</strong> <span id="verNombre">-</span></p>
+            <p><strong>Sexo:</strong> <span id="verSexo">-</span></p>
+            <p><strong>Grado:</strong> <span id="verGrado">-</span></p>
+            <p><strong>CURP:</strong> <span id="verCURP">-</span></p>
+            <p><strong>RFC:</strong> <span id="verRFC">-</span></p>
+            <p><strong>Estado:</strong> <span id="verEstado">-</span></p>
+        </div>
+        <br>
+        <button type="button" class="btn btn-secondary" id="btnCerrarVer">Cerrar</button>
+    </div>
+</div>
+
     <script src="js/dashboard.js"></script>
 </body>
 </html>
