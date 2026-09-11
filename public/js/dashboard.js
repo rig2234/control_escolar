@@ -45,6 +45,16 @@ const cicloError = document.getElementById('cicloError');
 const cicloSuccess = document.getElementById('cicloSuccess');
 const ciclosBody = document.getElementById('ciclosBody');
 
+// Modal Maestrías
+const btnAgregarMaestria = document.getElementById('btnAgregarMaestria');
+const modalAgregarMaestria = document.getElementById('modalAgregarMaestria');
+const btnCerrarModalMaestria = document.getElementById('btnCerrarModalMaestria');
+const btnCancelarMaestria = document.getElementById('btnCancelarMaestria');
+const formAgregarMaestria = document.getElementById('formAgregarMaestria');
+const maestriaError = document.getElementById('maestriaError');
+const maestriaSuccess = document.getElementById('maestriaSuccess');
+const maestriasBody = document.getElementById('maestriasBody');
+
 // ==========================================
 // ESTADO GLOBAL (SEPARADO)
 // ==========================================
@@ -52,6 +62,7 @@ let estudianteIdAEliminar = null;
 let editandoEstudianteId = null;
 let cicloIdAEliminar = null;
 let editandoCicloId = null;
+let editandoMaestriaId = null;
 
 // ==========================================
 // UTILIDADES Y VALIDACIONES
@@ -141,6 +152,34 @@ function renderizarCiclos(ciclos) {
     }).join('');
 }
 
+function renderizarMaestrias(maestrias) {
+    if (!maestriasBody) return;
+    if (!maestrias || !maestrias.length) {
+        maestriasBody.innerHTML = '<tr><td colspan="6">No hay maestrías registradas.</td></tr>';
+        return;
+    }
+
+    maestriasBody.innerHTML = maestrias.map(maestria => {
+        const duracion = maestria.duration
+            ? `${escaparHtml(maestria.duration)} semestre${maestria.duration == 1 ? '' : 's'}`
+            : '-';
+        return `
+        <tr>
+            <td>#${escaparHtml(maestria.id)}</td>
+            <td>${escaparHtml(maestria.name)}</td>
+            <td>${escaparHtml(maestria.description || '-')}</td>
+            <td>${duracion}</td>
+            <td><span class="badge ${maestria.status ? 'badge-success' : 'badge-warning'}">
+                ${maestria.status ? 'Activo' : 'Inactivo'}
+            </span></td>
+            <td>
+                <button class="btn-sm btn-warning" type="button" onclick="abrirModalEditarMaestria(${maestria.id})">Editar</button>
+                <button class="btn-sm btn-danger" type="button" onclick="abrirModalEliminarMaestria(${maestria.id})">Eliminar</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
 // ==========================================
 // PETICIONES A LA API (CARGA)
 // ==========================================
@@ -168,6 +207,20 @@ async function cargarCiclos() {
         console.error('Error al cargar ciclos:', error);
         if (ciclosBody) {
             ciclosBody.innerHTML = '<tr><td colspan="6">No se pudieron cargar los ciclos escolares.</td></tr>';
+        }
+    }
+}
+
+async function cargarMaestrias() {
+    try {
+        const response = await fetch('/api/maestrias');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Error al cargar maestrías');
+        renderizarMaestrias(data);
+    } catch (error) {
+        console.error('Error al cargar maestrías:', error);
+        if (maestriasBody) {
+            maestriasBody.innerHTML = '<tr><td colspan="6">No se pudieron cargar las maestrías.</td></tr>';
         }
     }
 }
@@ -555,6 +608,154 @@ async function eliminarCiclo(id) {
 }
 
 // ==========================================
+// MODAL CREAR / EDITAR MAESTRÍA
+// ==========================================
+function cerrarModalMaestria() {
+    if (modalAgregarMaestria) modalAgregarMaestria.classList.add('hidden');
+    if (formAgregarMaestria) formAgregarMaestria.reset();
+    editandoMaestriaId = null;
+    if (maestriaError) { maestriaError.textContent = ''; maestriaError.classList.remove('show'); }
+    if (maestriaSuccess) { maestriaSuccess.textContent = ''; maestriaSuccess.classList.remove('show'); }
+}
+
+function abrirModalCrearMaestria() {
+    cerrarModalMaestria();
+    if (modalAgregarMaestria) {
+        const titulo = modalAgregarMaestria.querySelector('h3');
+        if (titulo) titulo.textContent = 'Agregar Maestría';
+        modalAgregarMaestria.classList.remove('hidden');
+    }
+}
+
+window.abrirModalEditarMaestria = async function(id) {
+    try {
+        const response = await fetch(`/api/maestrias/${id}`);
+        const maestria = await response.json();
+
+        if (!response.ok) {
+            alert(maestria.error || 'No se pudieron obtener los datos de la maestría');
+            return;
+        }
+
+        editandoMaestriaId = id;
+
+        document.getElementById('maestriaNombre').value = maestria.name || '';
+        document.getElementById('maestriaDescripcion').value = maestria.description || '';
+        document.getElementById('maestriaDuracion').value = maestria.duration || '';
+        const creditosEl = document.getElementById('maestriaCreditos');
+        if (creditosEl) creditosEl.value = maestria.credits || '';
+
+        if (modalAgregarMaestria) {
+            const titulo = modalAgregarMaestria.querySelector('h3');
+            if (titulo) titulo.textContent = 'Editar Maestría';
+            modalAgregarMaestria.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Error al obtener maestría:', error);
+        alert('Error de conexión al cargar la maestría');
+    }
+};
+
+if (btnAgregarMaestria) btnAgregarMaestria.addEventListener('click', abrirModalCrearMaestria);
+if (btnCerrarModalMaestria) btnCerrarModalMaestria.addEventListener('click', cerrarModalMaestria);
+if (btnCancelarMaestria) btnCancelarMaestria.addEventListener('click', cerrarModalMaestria);
+if (modalAgregarMaestria) {
+    modalAgregarMaestria.addEventListener('click', (e) => {
+        if (e.target === modalAgregarMaestria) cerrarModalMaestria();
+    });
+}
+
+if (formAgregarMaestria) {
+    formAgregarMaestria.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const nombre = document.getElementById('maestriaNombre').value.trim();
+        const descripcion = document.getElementById('maestriaDescripcion').value.trim();
+        const duracion = document.getElementById('maestriaDuracion').value;
+        const creditosEl = document.getElementById('maestriaCreditos');
+        const creditos = creditosEl ? creditosEl.value : '';
+
+        if (!nombre) {
+            maestriaError.textContent = 'El nombre de la maestría es requerido';
+            maestriaError.classList.add('show');
+            return;
+        }
+
+        if (!duracion || parseInt(duracion, 10) < 1) {
+            maestriaError.textContent = 'La duración en semestres es requerida y debe ser mayor a 0';
+            maestriaError.classList.add('show');
+            return;
+        }
+
+        const datosMaestria = {
+            name: nombre,
+            description: descripcion,
+            duration: parseInt(duracion, 10),
+            credits: creditos ? parseInt(creditos, 10) : null
+        };
+
+        const url = editandoMaestriaId ? `/api/maestrias/${editandoMaestriaId}` : '/api/maestrias';
+        const metodo = editandoMaestriaId ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datosMaestria)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                maestriaSuccess.textContent = editandoMaestriaId ? '¡Maestría actualizada con éxito!' : '¡Maestría registrada con éxito!';
+                maestriaSuccess.classList.add('show');
+
+                setTimeout(() => {
+                    cerrarModalMaestria();
+                    cargarMaestrias();
+                }, 1200);
+            } else {
+                maestriaError.textContent = data.error || 'Error al guardar la maestría';
+                maestriaError.classList.add('show');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            maestriaError.textContent = 'Error de conexión con el servidor';
+            maestriaError.classList.add('show');
+        }
+    });
+}
+
+// ==========================================
+// ELIMINAR MAESTRÍA
+// ==========================================
+window.abrirModalEliminarMaestria = async function(id) {
+    if (confirm('¿Estás seguro de que deseas eliminar esta maestría?')) {
+        eliminarMaestria(id);
+    }
+};
+
+async function eliminarMaestria(id) {
+    try {
+        const response = await fetch(`/api/maestrias/${id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            cargarMaestrias();
+        } else {
+            alert(`Error: ${data.error || 'No se pudo eliminar la maestría'}`);
+        }
+    } catch (error) {
+        console.error('Error al eliminar maestría:', error);
+        alert('Ocurrió un error de conexión al intentar eliminar.');
+    }
+}
+
+// ==========================================
 // SESIÓN Y NAVEGACIÓN
 // ==========================================
 function verificarSesion() {
@@ -618,6 +819,8 @@ navLinks.forEach(link => {
                 cargarEstudiantes();
             } else if (sectionId === 'ciclosescolares') {
                 cargarCiclos();
+            } else if (sectionId === 'maestrias') {
+                cargarMaestrias();
             }
 
             const titleEl = document.getElementById('pageTitle');

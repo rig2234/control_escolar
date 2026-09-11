@@ -13,11 +13,13 @@ const pool = require('./config/database');
 const userRoutes = require('./routes/userRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const cycleRoutes = require('./routes/cycleRoutes');
+const masterRoutes = require('./routes/masterRoutes');
 
 // Rutas API
 app.use('/api/usuarios', userRoutes);
 app.use('/api/estudiantes', studentRoutes);
 app.use('/api/ciclos', cycleRoutes);
+app.use('/api/maestrias', masterRoutes);
 
 // Rutas de vistas
 app.get('/login', (req, res) => {
