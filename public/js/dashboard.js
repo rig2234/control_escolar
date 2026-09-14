@@ -943,6 +943,165 @@ if (formCambiarContraseña) {
 }
 
 // ==========================================
+// SECCIÓN MATERIAS (DOM & VARIABLES)
+// ==========================================
+const btnAgregarMateria = document.getElementById('btnAgregarMateria');
+const modalAgregarMateria = document.getElementById('modalAgregarMateria');
+const btnCerrarModalMateria = document.getElementById('btnCerrarModalMateria');
+const btnCancelarMateria = document.getElementById('btnCancelarMateria');
+const formAgregarMateria = document.getElementById('formAgregarMateria');
+const materiaError = document.getElementById('materiaError');
+const materiaSuccess = document.getElementById('materiaSuccess');
+const materiasBody = document.getElementById('materiasBody');
+
+let editandoMateriaId = null;
+
+// RENDERIZADO EN TABLA
+function renderizarMaterias(materias) {
+    if (!materiasBody) return;
+    if (!materias || !materias.length) {
+        materiasBody.innerHTML = '<tr><td colspan="4">No hay materias registradas.</td></tr>';
+        return;
+    }
+
+    materiasBody.innerHTML = materias.map(materia => `
+        <tr>
+            <td>#${escaparHtml(materia.id)}</td>
+            <td>${escaparHtml(materia.name)}</td>
+            <td><span class="badge ${materia.status === 1 ? 'badge-success' : 'badge-warning'}">
+                ${materia.status === 1 ? 'Activa' : 'Inactiva'}
+            </span></td>
+            <td>
+                <button class="btn-sm btn-warning" type="button" onclick="abrirModalEditarMateria(${materia.id})">Editar</button>
+                <button class="btn-sm btn-danger" type="button" onclick="abrirModalEliminarMateria(${materia.id})">Eliminar</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// CARGA DE DATOS DESDE LA API
+async function cargarMaterias() {
+    try {
+        const response = await fetch('/api/materias');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Error al cargar materias');
+        renderizarMaterias(data);
+    } catch (error) {
+        console.error('Error al cargar materias:', error);
+        if (materiasBody) {
+            materiasBody.innerHTML = '<tr><td colspan="4">No se pudieron cargar las materias.</td></tr>';
+        }
+    }
+}
+
+// CONTROL DEL MODAL
+function cerrarModalMateria() {
+    if (modalAgregarMateria) modalAgregarMateria.classList.add('hidden');
+    if (formAgregarMateria) formAgregarMateria.reset();
+    editandoMateriaId = null;
+    if (materiaError) { materiaError.textContent = ''; materiaError.classList.remove('show'); }
+    if (materiaSuccess) { materiaSuccess.textContent = ''; materiaSuccess.classList.remove('show'); }
+}
+
+function abrirModalCrearMateria() {
+    cerrarModalMateria();
+    if (modalAgregarMateria) {
+        const titulo = modalAgregarMateria.querySelector('h3');
+        if (titulo) titulo.textContent = 'Agregar Materia';
+        modalAgregarMateria.classList.remove('hidden');
+    }
+}
+
+window.abrirModalEditarMateria = async function(id) {
+    try {
+        const response = await fetch(`/api/materias/${id}`);
+        const materia = await response.json();
+
+        if (!response.ok) {
+            alert(materia.error || 'No se pudieron obtener los datos de la materia');
+            return;
+        }
+
+        editandoMateriaId = id;
+        document.getElementById('materiaNombre').value = materia.name || '';
+
+        if (modalAgregarMateria) {
+            const titulo = modalAgregarMateria.querySelector('h3');
+            if (titulo) titulo.textContent = 'Editar Materia';
+            modalAgregarMateria.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Error al obtener materia:', error);
+        alert('Error de conexión al cargar la materia');
+    }
+};
+
+window.abrirModalEliminarMateria = async function(id) {
+    if (confirm('¿Estás seguro de que deseas eliminar esta materia?')) {
+        try {
+            const response = await fetch(`/api/materias/${id}`, { method: 'DELETE' });
+            const data = await response.json();
+            if (response.ok) {
+                cargarMaterias();
+            } else {
+                alert(`Error: ${data.error || 'No se pudo eliminar la materia'}`);
+            }
+        } catch (error) {
+            console.error('Error al eliminar materia:', error);
+            alert('Error de conexión al eliminar la materia.');
+        }
+    }
+};
+
+// EVENTOS DE BOTONES
+if (btnAgregarMateria) btnAgregarMateria.addEventListener('click', abrirModalCrearMateria);
+if (btnCerrarModalMateria) btnCerrarModalMateria.addEventListener('click', cerrarModalMateria);
+if (btnCancelarMateria) btnCancelarMateria.addEventListener('click', cerrarModalMateria);
+
+if (formAgregarMateria) {
+    formAgregarMateria.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const nombre = document.getElementById('materiaNombre').value.trim();
+
+        if (!nombre) {
+            materiaError.textContent = 'El nombre de la materia es requerido';
+            materiaError.classList.add('show');
+            return;
+        }
+
+        const datosMateria = { name: nombre };
+        const url = editandoMateriaId ? `/api/materias/${editandoMateriaId}` : '/api/materias';
+        const metodo = editandoMateriaId ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datosMateria)
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                materiaSuccess.textContent = editandoMateriaId ? '¡Materia actualizada con éxito!' : '¡Materia registrada con éxito!';
+                materiaSuccess.classList.add('show');
+                setTimeout(() => {
+                    cerrarModalMateria();
+                    cargarMaterias();
+                }, 1200);
+            } else {
+                materiaError.textContent = data.error || 'Error al guardar la materia';
+                materiaError.classList.add('show');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            materiaError.textContent = 'Error de conexión con el servidor';
+            materiaError.classList.add('show');
+        }
+    });
+}
+
+// ==========================================
 // INICIALIZACIÓN DE LA APLICACIÓN
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {

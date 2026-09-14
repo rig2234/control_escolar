@@ -857,6 +857,30 @@
     </div>
 </div>
 
+<!-- MODAL AGREGAR / EDITAR MATERIA -->
+<div id="modalAgregarMateria" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Agregar Materia</h3>
+            <button class="btn-close" id="btnCerrarModalMateria">&times;</button>
+        </div>
+        <form id="formAgregarMateria" class="modal-form">
+            <div class="form-group">
+                <label for="materiaNombre">Nombre de la Materia *</label>
+                <input type="text" id="materiaNombre" placeholder="Ej: Programación Web" required>
+            </div>
+
+            <div class="modal-buttons">
+                <button type="button" class="btn-secondary" id="btnCancelarMateria">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar Materia</button>
+            </div>
+
+            <span class="error-message" id="materiaError"></span>
+            <span class="success-message" id="materiaSuccess"></span>
+        </form>
+    </div>
+</div>
+
     <script src="js/dashboard.js"></script>
 </body>
 </html>

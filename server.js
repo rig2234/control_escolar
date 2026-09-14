@@ -14,12 +14,14 @@ const userRoutes = require('./routes/userRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const cycleRoutes = require('./routes/cycleRoutes');
 const masterRoutes = require('./routes/masteryRoutes');
+const courseRoutes = require('./routes/courseRoutes'); // <--- Importar rutas de materias
 
 // Rutas API
 app.use('/api/usuarios', userRoutes);
 app.use('/api/estudiantes', studentRoutes);
 app.use('/api/ciclos', cycleRoutes);
 app.use('/api/maestrias', masterRoutes);
+app.use('/api/materias', courseRoutes); // <--- Montar endpoint /api/materias
 
 // Rutas de vistas
 app.get('/login', (req, res) => {
