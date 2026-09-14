@@ -821,6 +821,8 @@ navLinks.forEach(link => {
                 cargarCiclos();
             } else if (sectionId === 'maestrias') {
                 cargarMaestrias();
+            } else if (sectionId === 'materias') { // <--- AGREGAR ESTA LÍNEA
+                cargarMaterias();                   // <--- AGREGAR ESTA LÍNEA
             }
 
             const titleEl = document.getElementById('pageTitle');
