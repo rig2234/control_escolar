@@ -28,12 +28,14 @@ const modalVerEstudiante = document.getElementById('modalVerEstudiante');
 const btnCerrarModalVer = document.getElementById('btnCerrarModalVer');
 const btnCerrarVer = document.getElementById('btnCerrarVer');
 
-// Modal Estudiantes (Eliminar)
-const modalEliminar = document.getElementById('modalEliminarEstudiante');
+// MODAL UNIFICADO DE ELIMINACIÓN
+const modalEliminar = document.getElementById('modalConfirmarEliminar') || document.getElementById('modalEliminarEstudiante');
 const btnCerrarModalEliminar = document.getElementById('btnCerrarModalEliminar');
 const btnCancelarEliminar = document.getElementById('btnCancelarEliminar');
 const btnConfirmarEliminar = document.getElementById('btnConfirmarEliminar');
-const nombreEstudianteEliminar = document.getElementById('nombreEstudianteEliminar');
+const nombreItemEliminar = document.getElementById('nombreItemEliminar') || document.getElementById('nombreEstudianteEliminar');
+const textoModalEliminar = document.getElementById('textoModalEliminar');
+const textoBtnConfirmarEliminar = document.getElementById('textoBtnConfirmarEliminar');
 
 // Modal Ciclos Escolares
 const btnAgregarCiclo = document.getElementById('btnAgregarCiclo');
@@ -55,14 +57,24 @@ const maestriaError = document.getElementById('maestriaError');
 const maestriaSuccess = document.getElementById('maestriaSuccess');
 const maestriasBody = document.getElementById('maestriasBody');
 
+// Modal Materias
+const btnAgregarMateria = document.getElementById('btnAgregarMateria');
+const modalAgregarMateria = document.getElementById('modalAgregarMateria');
+const btnCerrarModalMateria = document.getElementById('btnCerrarModalMateria');
+const btnCancelarMateria = document.getElementById('btnCancelarMateria');
+const formAgregarMateria = document.getElementById('formAgregarMateria');
+const materiaError = document.getElementById('materiaError');
+const materiaSuccess = document.getElementById('materiaSuccess');
+const materiasBody = document.getElementById('materiasBody');
+
 // ==========================================
-// ESTADO GLOBAL (SEPARADO)
+// ESTADO GLOBAL
 // ==========================================
-let estudianteIdAEliminar = null;
+let elementoAEliminar = { id: null, tipo: null };
 let editandoEstudianteId = null;
-let cicloIdAEliminar = null;
 let editandoCicloId = null;
 let editandoMaestriaId = null;
+let editandoMateriaId = null;
 
 // ==========================================
 // UTILIDADES Y VALIDACIONES
@@ -93,6 +105,79 @@ function validarNombre(valor, campo) {
     if (!/[a-záéíóúàâäãèêëìîïòôöõùûüüñçA-ZÁÉÍÓÚÀÂÄÃÈÊËÌÎÏÒÔÖÕÙÛÜÜÑÇ]/.test(valor)) return { valido: false, error: `${campo} debe contener al menos una letra` };
     if (/\s{2,}/.test(valor)) return { valido: false, error: `${campo} no puede contener espacios múltiples` };
     return { valido: true };
+}
+
+// ==========================================
+// CONTROL DEL MODAL UNIFICADO DE ELIMINACIÓN
+// ==========================================
+function mostrarModalEliminar(id, tipo, nombreMostrar = '') {
+    elementoAEliminar = { id, tipo };
+
+    const titulosUnidades = {
+        estudiantes: 'estudiante',
+        ciclos: 'ciclo escolar',
+        maestrias: 'maestría',
+        materias: 'materia'
+    };
+
+    const unidadTexto = titulosUnidades[tipo] || 'registro';
+
+    if (textoModalEliminar) {
+        textoModalEliminar.textContent = `¿Estás seguro de que deseas eliminar este ${unidadTexto}?`;
+    }
+    if (nombreItemEliminar) {
+        nombreItemEliminar.textContent = nombreMostrar || `#${id}`;
+    }
+    if (textoBtnConfirmarEliminar) {
+        textoBtnConfirmarEliminar.textContent = `Eliminar ${unidadTexto.charAt(0).toUpperCase() + unidadTexto.slice(1)}`;
+    }
+
+    if (modalEliminar) {
+        modalEliminar.classList.remove('hidden');
+    }
+}
+
+function cerrarModalEliminar() {
+    if (modalEliminar) modalEliminar.classList.add('hidden');
+    elementoAEliminar = { id: null, tipo: null };
+}
+
+if (btnCerrarModalEliminar) btnCerrarModalEliminar.addEventListener('click', cerrarModalEliminar);
+if (btnCancelarEliminar) btnCancelarEliminar.addEventListener('click', cerrarModalEliminar);
+
+if (modalEliminar) {
+    modalEliminar.addEventListener('click', (e) => {
+        if (e.target === modalEliminar) cerrarModalEliminar();
+    });
+}
+
+if (btnConfirmarEliminar) {
+    btnConfirmarEliminar.addEventListener('click', async () => {
+        const { id, tipo } = elementoAEliminar;
+        if (!id || !tipo) return;
+
+        try {
+            const response = await fetch(`/api/${tipo}/${id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                cerrarModalEliminar();
+                if (tipo === 'estudiantes') cargarEstudiantes();
+                else if (tipo === 'ciclos') cargarCiclos();
+                else if (tipo === 'maestrias') cargarMaestrias();
+                else if (tipo === 'materias') cargarMaterias();
+            } else {
+                alert(`Error: ${data.error || 'No se pudo eliminar el registro'}`);
+            }
+        } catch (error) {
+            console.error(`Error al eliminar ${tipo}:`, error);
+            alert('Ocurrió un error de conexión al intentar eliminar.');
+        }
+    });
 }
 
 // ==========================================
@@ -180,8 +265,31 @@ function renderizarMaestrias(maestrias) {
     }).join('');
 }
 
+function renderizarMaterias(materias) {
+    if (!materiasBody) return;
+    if (!materias || !materias.length) {
+        materiasBody.innerHTML = '<tr><td colspan="5">No hay materias registradas.</td></tr>';
+        return;
+    }
+
+    materiasBody.innerHTML = materias.map(materia => `
+        <tr>
+            <td>#${escaparHtml(materia.id)}</td>
+            <td>${escaparHtml(materia.name)}</td>
+            <td>${escaparHtml(materia.description || '-')}</td>
+            <td><span class="badge ${materia.status === 1 || materia.status === true ? 'badge-success' : 'badge-warning'}">
+                ${materia.status === 1 || materia.status === true ? 'Activa' : 'Inactiva'}
+            </span></td>
+            <td>
+                <button class="btn-sm btn-warning" type="button" onclick="abrirModalEditarMateria(${materia.id})">Editar</button>
+                <button class="btn-sm btn-danger" type="button" onclick="abrirModalEliminarMateria(${materia.id})">Eliminar</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
 // ==========================================
-// PETICIONES A LA API (CARGA)
+// PETICIONES A LA API (CARGA DE DATOS)
 // ==========================================
 async function cargarEstudiantes() {
     try {
@@ -224,6 +332,63 @@ async function cargarMaestrias() {
         }
     }
 }
+
+async function cargarMaterias() {
+    try {
+        const response = await fetch('/api/materias');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Error al cargar materias');
+        renderizarMaterias(data);
+    } catch (error) {
+        console.error('Error al cargar materias:', error);
+        if (materiasBody) {
+            materiasBody.innerHTML = '<tr><td colspan="5">No se pudieron cargar las materias.</td></tr>';
+        }
+    }
+}
+
+// ==========================================
+// ACCIONES DE ELIMINACIÓN POR MÓDULO
+// ==========================================
+window.abrirModalEliminar = async function(id) {
+    let nombre = `#${id}`;
+    try {
+        const response = await fetch(`/api/estudiantes/${id}`);
+        const estudiante = await response.json();
+        if (response.ok) nombre = nombreEstudiante(estudiante);
+    } catch (e) {}
+    mostrarModalEliminar(id, 'estudiantes', nombre);
+};
+
+window.abrirModalEliminarCiclo = async function(id) {
+    let nombre = `#${id}`;
+    try {
+        const response = await fetch(`/api/ciclos/${id}`);
+        const ciclo = await response.json();
+        if (response.ok) nombre = ciclo.name;
+    } catch (e) {}
+    mostrarModalEliminar(id, 'ciclos', nombre);
+};
+
+window.abrirModalEliminarMaestria = async function(id) {
+    let nombre = `#${id}`;
+    try {
+        const response = await fetch(`/api/maestrias/${id}`);
+        const maestria = await response.json();
+        if (response.ok) nombre = maestria.name;
+    } catch (e) {}
+    mostrarModalEliminar(id, 'maestrias', nombre);
+};
+
+window.abrirModalEliminarMateria = async function(id) {
+    let nombre = `#${id}`;
+    try {
+        const response = await fetch(`/api/materias/${id}`);
+        const materia = await response.json();
+        if (response.ok) nombre = materia.name;
+    } catch (e) {}
+    mostrarModalEliminar(id, 'materias', nombre);
+};
 
 // ==========================================
 // MODAL VER ESTUDIANTE
@@ -399,61 +564,6 @@ if (formAgregarEstudiante) {
 }
 
 // ==========================================
-// MODAL ELIMINAR ESTUDIANTE
-// ==========================================
-window.abrirModalEliminar = async function(id) {
-    estudianteIdAEliminar = id;
-    try {
-        const response = await fetch(`/api/estudiantes/${id}`);
-        const estudiante = await response.json();
-        if (response.ok && nombreEstudianteEliminar) {
-            nombreEstudianteEliminar.textContent = nombreEstudiante(estudiante);
-        }
-    } catch (e) {
-        if (nombreEstudianteEliminar) nombreEstudianteEliminar.textContent = `#${id}`;
-    }
-    if (modalEliminar) modalEliminar.classList.remove('hidden');
-};
-
-function cerrarModalEliminar() {
-    if (modalEliminar) modalEliminar.classList.add('hidden');
-    estudianteIdAEliminar = null;
-}
-
-if (btnCerrarModalEliminar) btnCerrarModalEliminar.addEventListener('click', cerrarModalEliminar);
-if (btnCancelarEliminar) btnCancelarEliminar.addEventListener('click', cerrarModalEliminar);
-if (modalEliminar) {
-    modalEliminar.addEventListener('click', (e) => {
-        if (e.target === modalEliminar) cerrarModalEliminar();
-    });
-}
-
-if (btnConfirmarEliminar) {
-    btnConfirmarEliminar.addEventListener('click', async () => {
-        if (!estudianteIdAEliminar) return;
-
-        try {
-            const response = await fetch(`/api/estudiantes/${estudianteIdAEliminar}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                cerrarModalEliminar();
-                cargarEstudiantes();
-            } else {
-                alert(`Error: ${data.error || 'No se pudo eliminar el estudiante'}`);
-            }
-        } catch (error) {
-            console.error('Error al eliminar estudiante:', error);
-            alert('Ocurrió un error de conexión al intentar eliminar.');
-        }
-    });
-}
-
-// ==========================================
 // MODAL CREAR / EDITAR CICLO ESCOLAR
 // ==========================================
 function cerrarModalCiclo() {
@@ -578,36 +688,6 @@ if (formAgregarCiclo) {
 }
 
 // ==========================================
-// MODAL ELIMINAR CICLO ESCOLAR
-// ==========================================
-window.abrirModalEliminarCiclo = async function(id) {
-    cicloIdAEliminar = id;
-    if (confirm(`¿Estás seguro de que deseas eliminar este ciclo escolar?`)) {
-        eliminarCiclo(id);
-    }
-};
-
-async function eliminarCiclo(id) {
-    try {
-        const response = await fetch(`/api/ciclos/${id}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            cargarCiclos();
-        } else {
-            alert(`Error: ${data.error || 'No se pudo eliminar el ciclo'}`);
-        }
-    } catch (error) {
-        console.error('Error al eliminar ciclo:', error);
-        alert('Ocurrió un error de conexión al intentar eliminar.');
-    }
-}
-
-// ==========================================
 // MODAL CREAR / EDITAR MAESTRÍA
 // ==========================================
 function cerrarModalMaestria() {
@@ -727,32 +807,108 @@ if (formAgregarMaestria) {
 }
 
 // ==========================================
-// ELIMINAR MAESTRÍA
+// MODAL CREAR / EDITAR MATERIA
 // ==========================================
-window.abrirModalEliminarMaestria = async function(id) {
-    if (confirm('¿Estás seguro de que deseas eliminar esta maestría?')) {
-        eliminarMaestria(id);
+function cerrarModalMateria() {
+    if (modalAgregarMateria) modalAgregarMateria.classList.add('hidden');
+    if (formAgregarMateria) formAgregarMateria.reset();
+    editandoMateriaId = null;
+    if (materiaError) { materiaError.textContent = ''; materiaError.classList.remove('show'); }
+    if (materiaSuccess) { materiaSuccess.textContent = ''; materiaSuccess.classList.remove('show'); }
+}
+
+function abrirModalCrearMateria() {
+    cerrarModalMateria();
+    if (modalAgregarMateria) {
+        const titulo = modalAgregarMateria.querySelector('h3');
+        if (titulo) titulo.textContent = 'Agregar Materia';
+        modalAgregarMateria.classList.remove('hidden');
+    }
+}
+
+window.abrirModalEditarMateria = async function(id) {
+    try {
+        const response = await fetch(`/api/materias/${id}`);
+        const materia = await response.json();
+
+        if (!response.ok) {
+            alert(materia.error || 'No se pudieron obtener los datos de la materia');
+            return;
+        }
+
+        editandoMateriaId = id;
+        document.getElementById('materiaNombre').value = materia.name || '';
+        
+        const descEl = document.getElementById('materiaDescripcion');
+        if (descEl) descEl.value = materia.description || '';
+
+        if (modalAgregarMateria) {
+            const titulo = modalAgregarMateria.querySelector('h3');
+            if (titulo) titulo.textContent = 'Editar Materia';
+            modalAgregarMateria.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Error al obtener materia:', error);
+        alert('Error de conexión al cargar la materia');
     }
 };
 
-async function eliminarMaestria(id) {
-    try {
-        const response = await fetch(`/api/maestrias/${id}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' }
-        });
+if (btnAgregarMateria) btnAgregarMateria.addEventListener('click', abrirModalCrearMateria);
+if (btnCerrarModalMateria) btnCerrarModalMateria.addEventListener('click', cerrarModalMateria);
+if (btnCancelarMateria) btnCancelarMateria.addEventListener('click', cerrarModalMateria);
+if (modalAgregarMateria) {
+    modalAgregarMateria.addEventListener('click', (e) => {
+        if (e.target === modalAgregarMateria) cerrarModalMateria();
+    });
+}
 
-        const data = await response.json();
+if (formAgregarMateria) {
+    formAgregarMateria.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-        if (response.ok) {
-            cargarMaestrias();
-        } else {
-            alert(`Error: ${data.error || 'No se pudo eliminar la maestría'}`);
+        const nombre = document.getElementById('materiaNombre').value.trim();
+        const descEl = document.getElementById('materiaDescripcion');
+        const descripcion = descEl ? descEl.value.trim() : '';
+
+        if (!nombre) {
+            materiaError.textContent = 'El nombre de la materia es requerido';
+            materiaError.classList.add('show');
+            return;
         }
-    } catch (error) {
-        console.error('Error al eliminar maestría:', error);
-        alert('Ocurrió un error de conexión al intentar eliminar.');
-    }
+
+        const datosMateria = { 
+            name: nombre,
+            description: descripcion 
+        };
+
+        const url = editandoMateriaId ? `/api/materias/${editandoMateriaId}` : '/api/materias';
+        const metodo = editandoMateriaId ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datosMateria)
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                materiaSuccess.textContent = editandoMateriaId ? '¡Materia actualizada con éxito!' : '¡Materia registrada con éxito!';
+                materiaSuccess.classList.add('show');
+                setTimeout(() => {
+                    cerrarModalMateria();
+                    cargarMaterias();
+                }, 1200);
+            } else {
+                materiaError.textContent = data.error || 'Error al guardar la materia';
+                materiaError.classList.add('show');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            materiaError.textContent = 'Error de conexión con el servidor';
+            materiaError.classList.add('show');
+        }
+    });
 }
 
 // ==========================================
@@ -821,8 +977,8 @@ navLinks.forEach(link => {
                 cargarCiclos();
             } else if (sectionId === 'maestrias') {
                 cargarMaestrias();
-            } else if (sectionId === 'materias') { // <--- AGREGAR ESTA LÍNEA
-                cargarMaterias();                   // <--- AGREGAR ESTA LÍNEA
+            } else if (sectionId === 'materias') {
+                cargarMaterias();
             }
 
             const titleEl = document.getElementById('pageTitle');
@@ -940,165 +1096,6 @@ if (formCambiarContraseña) {
         } catch (error) {
             console.error('Error:', error);
             if (formError) { formError.textContent = 'Error de conexión'; formError.classList.add('show'); }
-        }
-    });
-}
-
-// ==========================================
-// SECCIÓN MATERIAS (DOM & VARIABLES)
-// ==========================================
-const btnAgregarMateria = document.getElementById('btnAgregarMateria');
-const modalAgregarMateria = document.getElementById('modalAgregarMateria');
-const btnCerrarModalMateria = document.getElementById('btnCerrarModalMateria');
-const btnCancelarMateria = document.getElementById('btnCancelarMateria');
-const formAgregarMateria = document.getElementById('formAgregarMateria');
-const materiaError = document.getElementById('materiaError');
-const materiaSuccess = document.getElementById('materiaSuccess');
-const materiasBody = document.getElementById('materiasBody');
-
-let editandoMateriaId = null;
-
-// RENDERIZADO EN TABLA
-function renderizarMaterias(materias) {
-    if (!materiasBody) return;
-    if (!materias || !materias.length) {
-        materiasBody.innerHTML = '<tr><td colspan="4">No hay materias registradas.</td></tr>';
-        return;
-    }
-
-    materiasBody.innerHTML = materias.map(materia => `
-        <tr>
-            <td>#${escaparHtml(materia.id)}</td>
-            <td>${escaparHtml(materia.name)}</td>
-            <td><span class="badge ${materia.status === 1 ? 'badge-success' : 'badge-warning'}">
-                ${materia.status === 1 ? 'Activa' : 'Inactiva'}
-            </span></td>
-            <td>
-                <button class="btn-sm btn-warning" type="button" onclick="abrirModalEditarMateria(${materia.id})">Editar</button>
-                <button class="btn-sm btn-danger" type="button" onclick="abrirModalEliminarMateria(${materia.id})">Eliminar</button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-// CARGA DE DATOS DESDE LA API
-async function cargarMaterias() {
-    try {
-        const response = await fetch('/api/materias');
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Error al cargar materias');
-        renderizarMaterias(data);
-    } catch (error) {
-        console.error('Error al cargar materias:', error);
-        if (materiasBody) {
-            materiasBody.innerHTML = '<tr><td colspan="4">No se pudieron cargar las materias.</td></tr>';
-        }
-    }
-}
-
-// CONTROL DEL MODAL
-function cerrarModalMateria() {
-    if (modalAgregarMateria) modalAgregarMateria.classList.add('hidden');
-    if (formAgregarMateria) formAgregarMateria.reset();
-    editandoMateriaId = null;
-    if (materiaError) { materiaError.textContent = ''; materiaError.classList.remove('show'); }
-    if (materiaSuccess) { materiaSuccess.textContent = ''; materiaSuccess.classList.remove('show'); }
-}
-
-function abrirModalCrearMateria() {
-    cerrarModalMateria();
-    if (modalAgregarMateria) {
-        const titulo = modalAgregarMateria.querySelector('h3');
-        if (titulo) titulo.textContent = 'Agregar Materia';
-        modalAgregarMateria.classList.remove('hidden');
-    }
-}
-
-window.abrirModalEditarMateria = async function(id) {
-    try {
-        const response = await fetch(`/api/materias/${id}`);
-        const materia = await response.json();
-
-        if (!response.ok) {
-            alert(materia.error || 'No se pudieron obtener los datos de la materia');
-            return;
-        }
-
-        editandoMateriaId = id;
-        document.getElementById('materiaNombre').value = materia.name || '';
-
-        if (modalAgregarMateria) {
-            const titulo = modalAgregarMateria.querySelector('h3');
-            if (titulo) titulo.textContent = 'Editar Materia';
-            modalAgregarMateria.classList.remove('hidden');
-        }
-    } catch (error) {
-        console.error('Error al obtener materia:', error);
-        alert('Error de conexión al cargar la materia');
-    }
-};
-
-window.abrirModalEliminarMateria = async function(id) {
-    if (confirm('¿Estás seguro de que deseas eliminar esta materia?')) {
-        try {
-            const response = await fetch(`/api/materias/${id}`, { method: 'DELETE' });
-            const data = await response.json();
-            if (response.ok) {
-                cargarMaterias();
-            } else {
-                alert(`Error: ${data.error || 'No se pudo eliminar la materia'}`);
-            }
-        } catch (error) {
-            console.error('Error al eliminar materia:', error);
-            alert('Error de conexión al eliminar la materia.');
-        }
-    }
-};
-
-// EVENTOS DE BOTONES
-if (btnAgregarMateria) btnAgregarMateria.addEventListener('click', abrirModalCrearMateria);
-if (btnCerrarModalMateria) btnCerrarModalMateria.addEventListener('click', cerrarModalMateria);
-if (btnCancelarMateria) btnCancelarMateria.addEventListener('click', cerrarModalMateria);
-
-if (formAgregarMateria) {
-    formAgregarMateria.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const nombre = document.getElementById('materiaNombre').value.trim();
-
-        if (!nombre) {
-            materiaError.textContent = 'El nombre de la materia es requerido';
-            materiaError.classList.add('show');
-            return;
-        }
-
-        const datosMateria = { name: nombre };
-        const url = editandoMateriaId ? `/api/materias/${editandoMateriaId}` : '/api/materias';
-        const metodo = editandoMateriaId ? 'PUT' : 'POST';
-
-        try {
-            const response = await fetch(url, {
-                method: metodo,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datosMateria)
-            });
-            const data = await response.json();
-
-            if (response.ok) {
-                materiaSuccess.textContent = editandoMateriaId ? '¡Materia actualizada con éxito!' : '¡Materia registrada con éxito!';
-                materiaSuccess.classList.add('show');
-                setTimeout(() => {
-                    cerrarModalMateria();
-                    cargarMaterias();
-                }, 1200);
-            } else {
-                materiaError.textContent = data.error || 'Error al guardar la materia';
-                materiaError.classList.add('show');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            materiaError.textContent = 'Error de conexión con el servidor';
-            materiaError.classList.add('show');
         }
     });
 }
