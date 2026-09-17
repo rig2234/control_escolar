@@ -197,7 +197,7 @@ function renderizarEstudiantes(estudiantes) {
             <td>#${escaparHtml(estudiante.id)}</td>
             <td>${escaparHtml(nombreComp)}</td>
             <td>${escaparHtml(estudiante.sex || '-')}</td>
-            <td>${escaparHtml(estudiante.idgrade || '-')}</td>
+            <td>${escaparHtml(estudiante.gradeName || estudiante.idgrade || '-')}</td>
             <td><span class="badge ${estudiante.status ? 'badge-success' : 'badge-warning'}">
                 ${estudiante.status ? 'Activo' : 'Inactivo'}
             </span></td>
@@ -406,7 +406,7 @@ window.abrirModalVer = async function(id) {
         document.getElementById('verId').textContent = `#${estudiante.id}`;
         document.getElementById('verNombre').textContent = nombreEstudiante(estudiante) || 'Sin nombre';
         document.getElementById('verSexo').textContent = estudiante.sex || 'No especificado';
-        document.getElementById('verGrado').textContent = estudiante.idgrade || 'No asignado';
+        document.getElementById('verGrado').textContent = estudiante.gradeName || estudiante.idgrade || 'No asignado';
         document.getElementById('verCURP').textContent = estudiante.CURP || 'N/A';
         document.getElementById('verRFC').textContent = estudiante.RFC || 'N/A';
         document.getElementById('verEstado').textContent = estudiante.status ? 'Activo' : 'Inactivo';
@@ -441,10 +441,34 @@ function cerrarModalEstudiante() {
     if (estSuccess) { estSuccess.textContent = ''; estSuccess.classList.remove('show'); }
 }
 
-function abrirModalCrear() {
+async function abrirModalCrear() {
     cerrarModalEstudiante();
+    await cargarGradosEnSelect();
     if (modalEstudianteTitulo) modalEstudianteTitulo.textContent = 'Agregar Estudiante';
     if (modalAgregarEstudiante) modalAgregarEstudiante.classList.remove('hidden');
+}
+
+// Cargar la lista de grados dentro del <select id="estGrado">
+let gradosCache = null;
+async function cargarGradosEnSelect() {
+    const select = document.getElementById('estGrado');
+    if (!select) return;
+
+    try {
+        if (!gradosCache) {
+            const response = await fetch('/api/grados');
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Error al cargar grados');
+            gradosCache = Array.isArray(data) ? data : [];
+        }
+
+        const valorActual = select.value;
+        select.innerHTML = '<option value="">Seleccionar grado...</option>' +
+            gradosCache.map(g => `<option value="${escaparHtml(g.id)}">${escaparHtml(g.name)}</option>`).join('');
+        select.value = valorActual;
+    } catch (error) {
+        console.error('Error al cargar grados en el select:', error);
+    }
 }
 
 window.abrirModalEditar = async function(id) {
@@ -463,6 +487,7 @@ window.abrirModalEditar = async function(id) {
         document.getElementById('estPrimerApellido').value = estudiante.firstlastname || '';
         document.getElementById('estSegundoApellido').value = estudiante.secondlastname || '';
         document.getElementById('estSexo').value = estudiante.sex || '';
+        await cargarGradosEnSelect();
         document.getElementById('estGrado').value = estudiante.idgrade || '';
         document.getElementById('estCURP').value = estudiante.CURP || '';
         document.getElementById('estRFC').value = estudiante.RFC || '';

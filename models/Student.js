@@ -51,15 +51,17 @@ class Student {
     const request = new sql.Request(pool);
     const resultado = await request.query(`
       SELECT
-        id,
-        name,
-        firstlastname,
-        secondlastname,
-        sex,
-        idgrade,
-        status
-      FROM students
-      ORDER BY id DESC
+        s.id,
+        s.name,
+        s.firstlastname,
+        s.secondlastname,
+        s.sex,
+        s.idgrade,
+        g.name AS gradeName,
+        s.status
+      FROM students s
+      LEFT JOIN grades g ON g.id = s.idgrade
+      ORDER BY s.id DESC
     `);
 
     return resultado.recordset;
@@ -162,17 +164,19 @@ class Student {
 
     const resultado = await request.query(`
       SELECT
-        id,
-        name,
-        firstlastname,
-        secondlastname,
-        sex,
-        idgrade,
-        CURP,
-        RFC,
-        status
-      FROM students
-      WHERE id = @id
+        s.id,
+        s.name,
+        s.firstlastname,
+        s.secondlastname,
+        s.sex,
+        s.idgrade,
+        g.name AS gradeName,
+        s.CURP,
+        s.RFC,
+        s.status
+      FROM students s
+      LEFT JOIN grades g ON g.id = s.idgrade
+      WHERE s.id = @id
     `);
 
     return resultado.recordset[0] || null;

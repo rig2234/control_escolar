@@ -15,6 +15,9 @@ const studentRoutes = require('./routes/studentRoutes');
 const cycleRoutes = require('./routes/cycleRoutes');
 const masterRoutes = require('./routes/masteryRoutes');
 const courseRoutes = require('./routes/courseRoutes'); // <--- Importar rutas de materias
+const gradeRoutes = require('./routes/gradeRoutes');
+const cycleCourseRoutes = require('./routes/cycleCourseRoutes');
+const cycleCourseStudentRoutes = require('./routes/cycleCourseStudentRoutes');
 
 // Rutas API
 app.use('/api/usuarios', userRoutes);
@@ -22,6 +25,9 @@ app.use('/api/estudiantes', studentRoutes);
 app.use('/api/ciclos', cycleRoutes);
 app.use('/api/maestrias', masterRoutes);
 app.use('/api/materias', courseRoutes); // <--- Montar endpoint /api/materias
+app.use('/api/grados', gradeRoutes);
+app.use('/api/ciclomaterias', cycleCourseRoutes);
+app.use('/api/inscripciones', cycleCourseStudentRoutes);
 
 // Rutas de vistas
 app.get('/login', (req, res) => {
