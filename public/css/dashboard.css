@@ -1136,3 +1136,91 @@ body {
     .user-details { display: none; }
     .user-info { padding: 6px; }
 }
+
+/* ===== STEPPER PROGRESIVO EN CICLOS ===== */
+.stepper-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    padding: 14px 20px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.step-btn {
+    background: none;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-light);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.step-btn .step-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--field);
+    border: 1px solid var(--border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.step-btn.active {
+    background: var(--primary-tint);
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.step-btn.active .step-num {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+.step-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.step-arrow {
+    color: var(--muted-soft);
+    font-size: 16px;
+}
+
+.step-content.hidden {
+    display: none;
+}
+
+.step-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+.carrera-card-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.carrera-card-select:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}

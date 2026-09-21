@@ -23,6 +23,7 @@
             </div>
 
             <nav class="sidebar-nav">
+                <!-- 1. Dashboard -->
                 <a href="#dashboard" class="nav-link active" data-section="dashboard">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3"></polyline>
@@ -33,24 +34,7 @@
                     <span>Dashboard</span>
                 </a>
 
-                <a href="#estudiantes" class="nav-link" data-section="estudiantes">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                    <span>Estudiantes</span>
-                </a>
-
-                <a href="#materias" class="nav-link" data-section="materias">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                    </svg>
-                    <span>Materias</span>
-                </a>
-
+                <!-- 2. Ciclos Escolares -->
                 <a href="#ciclosescolares" class="nav-link" data-section="ciclosescolares">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <circle cx="12" cy="12" r="10"></circle>
@@ -59,11 +43,32 @@
                     <span>Ciclos Escolares</span>
                 </a>
 
+                <!-- 3. Maestrías / Carreras -->
                 <a href="#maestrias" class="nav-link" data-section="maestrias">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M22 10v6m0 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4m20 0H2m20 0l-5.5-11H7.5L2 10m11 8v.01M12 19a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"></path>
                     </svg>
                     <span>Maestrías</span>
+                </a>
+
+                <!-- 4. Estudiantes -->
+                <a href="#estudiantes" class="nav-link" data-section="estudiantes">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <span>Estudiantes</span>
+                </a>
+
+                <!-- Resto de opciones -->
+                <a href="#materias" class="nav-link" data-section="materias">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <span>Materias</span>
                 </a>
 
                 <a href="#calificaciones" class="nav-link" data-section="calificaciones">
@@ -98,7 +103,7 @@
                     <span>Configuración</span>
                 </a>
             </nav>
-
+            
             <div class="sidebar-footer">
                 <button class="btn-logout" id="logoutBtn">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -301,32 +306,85 @@
                 </section>
 
                 <!-- CICLOS ESCOLARES SECTION -->
-                <section id="ciclosescolares" class="section">
-                    <div class="view-header">
-                        <h3>Gestión de Ciclos Escolares</h3>
-                        <button class="btn-primary" id="btnAgregarCiclo">+ Agregar Ciclo Escolar</button>
-                    </div>
+<section id="ciclosescolares" class="section">
+    <div class="view-header">
+        <div>
+            <h3>Gestión e Inscripción por Ciclos</h3>
+            <p>Sigue los pasos para navegar entre Ciclos, Carreras y Estudiantes</p>
+        </div>
+        <button class="btn-primary" id="btnAgregarCiclo">+ Agregar Ciclo Escolar</button>
+    </div>
 
-                    <div class="table-container">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Nombre del Ciclo</th>
-                                    <th>Año Inicio</th>
-                                    <th>Año Fin</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ciclosBody">
-                                <tr>
-                                    <td colspan="6">Cargando ciclos escolares...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
+    <!-- NAVEGACIÓN PROGRESIVA (STEPS) -->
+    <div class="stepper-nav">
+        <button class="step-btn active" id="step1Btn" onclick="volverPaso(1)">
+            <span class="step-num">1</span> 1. Ciclo Escolar: <strong id="selectedCicloText">Ninguno</strong>
+        </button>
+        <span class="step-arrow">→</span>
+        <button class="step-btn disabled" id="step2Btn" onclick="volverPaso(2)">
+            <span class="step-num">2</span> 2. Carrera / Maestría: <strong id="selectedCarreraText">Ninguna</strong>
+        </button>
+        <span class="step-arrow">→</span>
+        <button class="step-btn disabled" id="step3Btn">
+            <span class="step-num">3</span> 3. Alumnos Inscritos
+        </button>
+    </div>
+
+    <!-- PASO 1: VISTA DE CICLOS -->
+    <div id="pasoCiclos" class="step-content active">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre del Ciclo</th>
+                        <th>Año Inicio</th>
+                        <th>Año Fin</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="ciclosBody">
+                    <tr><td colspan="6">Cargando ciclos escolares...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PASO 2: VISTA DE CARRERAS / MAESTRÍAS DE ESE CICLO -->
+    <div id="pasoCarreras" class="step-content hidden">
+        <div class="view-header" style="margin-top: 15px;">
+            <h4>Carreras disponibles para este Ciclo</h4>
+        </div>
+        <div class="cards-grid" id="carrerasCicloContainer">
+            <!-- Cargas dinámicas con JS -->
+        </div>
+    </div>
+
+    <!-- PASO 3: VISTA DE ALUMNOS EN ESA CARRERA Y CICLO -->
+    <div id="pasoEstudiantes" class="step-content hidden">
+        <div class="view-header" style="margin-top: 15px;">
+            <h4>Alumnos Inscritos</h4>
+            <button class="btn-primary" id="btnInscribirEstudianteCiclo">+ Inscribir Alumno a Carrera</button>
+        </div>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Estudiante</th>
+                        <th>CURP</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="estudiantesCicloBody">
+                    <tr><td colspan="5">Seleccione una carrera para ver estudiantes...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
 
                 <!-- MAESTRÍAS SECTION -->
                 <section id="maestrias" class="section">

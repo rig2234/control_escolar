@@ -47,17 +47,7 @@ const cicloError = document.getElementById('cicloError');
 const cicloSuccess = document.getElementById('cicloSuccess');
 const ciclosBody = document.getElementById('ciclosBody');
 
-// Modal Maestrías
-const btnAgregarMaestria = document.getElementById('btnAgregarMaestria');
-const modalAgregarMaestria = document.getElementById('modalAgregarMaestria');
-const btnCerrarModalMaestria = document.getElementById('btnCerrarModalMaestria');
-const btnCancelarMaestria = document.getElementById('btnCancelarMaestria');
-const formAgregarMaestria = document.getElementById('formAgregarMaestria');
-const maestriaError = document.getElementById('maestriaError');
-const maestriaSuccess = document.getElementById('maestriaSuccess');
-const maestriasBody = document.getElementById('maestriasBody');
-
-// Modal Materias
+// Modal Materias / Cursos (courses)
 const btnAgregarMateria = document.getElementById('btnAgregarMateria');
 const modalAgregarMateria = document.getElementById('modalAgregarMateria');
 const btnCerrarModalMateria = document.getElementById('btnCerrarModalMateria');
@@ -73,8 +63,11 @@ const materiasBody = document.getElementById('materiasBody');
 let elementoAEliminar = { id: null, tipo: null };
 let editandoEstudianteId = null;
 let editandoCicloId = null;
-let editandoMaestriaId = null;
 let editandoMateriaId = null;
+
+// Estado para Navegación Progresiva en Ciclos
+let cicloSeleccionado = null;
+let carreraSeleccionada = null;
 
 // ==========================================
 // UTILIDADES Y VALIDACIONES
@@ -108,6 +101,147 @@ function validarNombre(valor, campo) {
 }
 
 // ==========================================
+// NAVEGACIÓN PROGRESIVA EN CICLOS ESCOLARES
+// ==========================================
+
+// Paso 1 -> Paso 2: Seleccionar un Ciclo Escolar
+window.seleccionarCiclo = async function(idCiclo, nombreCiclo) {
+    cicloSeleccionado = { id: idCiclo, name: nombreCiclo };
+    
+    const labelCiclo = document.getElementById('selectedCicloText');
+    if (labelCiclo) labelCiclo.textContent = nombreCiclo;
+    
+    const pasoCiclos = document.getElementById('pasoCiclos');
+    const pasoCarreras = document.getElementById('pasoCarreras');
+    if (pasoCiclos) { pasoCiclos.classList.remove('active'); pasoCiclos.classList.add('hidden'); }
+    if (pasoCarreras) { pasoCarreras.classList.remove('hidden'); pasoCarreras.classList.add('active'); }
+
+    const step1Btn = document.getElementById('step1Btn');
+    const step2Btn = document.getElementById('step2Btn');
+    if (step1Btn) step1Btn.classList.remove('active');
+    if (step2Btn) { step2Btn.classList.remove('disabled'); step2Btn.classList.add('active'); }
+
+    await cargarCarrerasDelCiclo(idCiclo);
+};
+
+// Cargar Materias/Cursos desde la tabla "courses" para el Paso 2
+async function cargarCarrerasDelCiclo(idCiclo) {
+    const container = document.getElementById('carrerasCicloContainer');
+    if (!container) return;
+    container.innerHTML = '<p>Cargando materias/cursos...</p>';
+
+    try {
+        const response = await fetch('/api/materias');
+        const materias = await response.json();
+
+        if (!response.ok || !materias.length) {
+            container.innerHTML = '<p>No hay materias disponibles.</p>';
+            return;
+        }
+
+        container.innerHTML = materias.map(m => `
+            <div class="carrera-card-select" onclick="seleccionarCarrera(${m.id}, '${escaparHtml(m.name)}')">
+                <h4 style="color: var(--primary); font-size: 16px; margin-bottom: 6px;">${escaparHtml(m.name)}</h4>
+                <p style="font-size: 13px; color: var(--text-light);">${escaparHtml(m.description || 'Sin descripción')}</p>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error al cargar materias:', error);
+        container.innerHTML = '<p>Error al conectar con el servidor.</p>';
+    }
+}
+
+// Paso 2 -> Paso 3: Seleccionar una Materia/Curso
+window.seleccionarCarrera = async function(idCarrera, nombreCarrera) {
+    carreraSeleccionada = { id: idCarrera, name: nombreCarrera };
+    
+    const labelCarrera = document.getElementById('selectedCarreraText');
+    if (labelCarrera) labelCarrera.textContent = nombreCarrera;
+
+    const pasoCarreras = document.getElementById('pasoCarreras');
+    const pasoEstudiantes = document.getElementById('pasoEstudiantes');
+    if (pasoCarreras) { pasoCarreras.classList.remove('active'); pasoCarreras.classList.add('hidden'); }
+    if (pasoEstudiantes) { pasoEstudiantes.classList.remove('hidden'); pasoEstudiantes.classList.add('active'); }
+
+    const step2Btn = document.getElementById('step2Btn');
+    const step3Btn = document.getElementById('step3Btn');
+    if (step2Btn) step2Btn.classList.remove('active');
+    if (step3Btn) { step3Btn.classList.remove('disabled'); step3Btn.classList.add('active'); }
+
+    await cargarEstudiantesCicloCarrera(cicloSeleccionado.id, carreraSeleccionada.id);
+};
+
+// Cargar alumnos inscritos para el Paso 3
+async function cargarEstudiantesCicloCarrera(idCiclo, idCarrera) {
+    const body = document.getElementById('estudiantesCicloBody');
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="5">Cargando alumnos inscritos...</td></tr>';
+
+    try {
+        const response = await fetch(`/api/estudiantes?ciclo=${idCiclo}&carrera=${idCarrera}`);
+        const estudiantes = await response.json();
+
+        if (!response.ok || !estudiantes.length) {
+            body.innerHTML = '<tr><td colspan="5">No hay estudiantes inscritos en esta materia para el ciclo seleccionado.</td></tr>';
+            return;
+        }
+
+        body.innerHTML = estudiantes.map(est => `
+            <tr>
+                <td>#${escaparHtml(est.id)}</td>
+                <td>${escaparHtml(nombreEstudiante(est))}</td>
+                <td>${escaparHtml(est.CURP || 'N/A')}</td>
+                <td><span class="badge badge-success">Inscrito</span></td>
+                <td>
+                    <button class="btn-sm btn-info" onclick="abrirModalVer(${est.id})">Ver</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        body.innerHTML = '<tr><td colspan="5">Error al cargar la lista de estudiantes.</td></tr>';
+    }
+}
+
+// Control de retroceso en el Stepper
+window.volverPaso = function(paso) {
+    const pasoCiclos = document.getElementById('pasoCiclos');
+    const pasoCarreras = document.getElementById('pasoCarreras');
+    const pasoEstudiantes = document.getElementById('pasoEstudiantes');
+    const step1Btn = document.getElementById('step1Btn');
+    const step2Btn = document.getElementById('step2Btn');
+    const step3Btn = document.getElementById('step3Btn');
+
+    if (paso === 1) {
+        cicloSeleccionado = null;
+        carreraSeleccionada = null;
+        
+        const labelCiclo = document.getElementById('selectedCicloText');
+        const labelCarrera = document.getElementById('selectedCarreraText');
+        if (labelCiclo) labelCiclo.textContent = 'Ninguno';
+        if (labelCarrera) labelCarrera.textContent = 'Ninguna';
+
+        if (pasoCarreras) { pasoCarreras.classList.remove('active'); pasoCarreras.classList.add('hidden'); }
+        if (pasoEstudiantes) { pasoEstudiantes.classList.remove('active'); pasoEstudiantes.classList.add('hidden'); }
+        if (pasoCiclos) { pasoCiclos.classList.remove('hidden'); pasoCiclos.classList.add('active'); }
+
+        if (step1Btn) step1Btn.classList.add('active');
+        if (step2Btn) { step2Btn.classList.remove('active'); step2Btn.classList.add('disabled'); }
+        if (step3Btn) { step3Btn.classList.remove('active'); step3Btn.classList.add('disabled'); }
+    } else if (paso === 2 && cicloSeleccionado) {
+        carreraSeleccionada = null;
+        
+        const labelCarrera = document.getElementById('selectedCarreraText');
+        if (labelCarrera) labelCarrera.textContent = 'Ninguna';
+
+        if (pasoEstudiantes) { pasoEstudiantes.classList.remove('active'); pasoEstudiantes.classList.add('hidden'); }
+        if (pasoCarreras) { pasoCarreras.classList.remove('hidden'); pasoCarreras.classList.add('active'); }
+
+        if (step2Btn) step2Btn.classList.add('active');
+        if (step3Btn) { step3Btn.classList.remove('active'); step3Btn.classList.add('disabled'); }
+    }
+};
+
+// ==========================================
 // CONTROL DEL MODAL UNIFICADO DE ELIMINACIÓN
 // ==========================================
 function mostrarModalEliminar(id, tipo, nombreMostrar = '') {
@@ -116,7 +250,6 @@ function mostrarModalEliminar(id, tipo, nombreMostrar = '') {
     const titulosUnidades = {
         estudiantes: 'estudiante',
         ciclos: 'ciclo escolar',
-        maestrias: 'maestría',
         materias: 'materia'
     };
 
@@ -168,7 +301,6 @@ if (btnConfirmarEliminar) {
                 cerrarModalEliminar();
                 if (tipo === 'estudiantes') cargarEstudiantes();
                 else if (tipo === 'ciclos') cargarCiclos();
-                else if (tipo === 'maestrias') cargarMaestrias();
                 else if (tipo === 'materias') cargarMaterias();
             } else {
                 alert(`Error: ${data.error || 'No se pudo eliminar el registro'}`);
@@ -223,43 +355,16 @@ function renderizarCiclos(ciclos) {
         return `
         <tr>
             <td>#${escaparHtml(ciclo.id)}</td>
-            <td>${escaparHtml(ciclo.name)}</td>
+            <td><strong>${escaparHtml(ciclo.name)}</strong></td>
             <td>${fechaInicio}</td>
             <td>${fechaFin}</td>
             <td><span class="badge ${ciclo.status ? 'badge-success' : 'badge-warning'}">
                 ${ciclo.status ? 'Activo' : 'Inactivo'}
             </span></td>
             <td>
+                <button class="btn-sm btn-primary" type="button" onclick="seleccionarCiclo(${ciclo.id}, '${escaparHtml(ciclo.name)}')">Seleccionar →</button>
                 <button class="btn-sm btn-warning" type="button" onclick="abrirModalEditarCiclo(${ciclo.id})">Editar</button>
                 <button class="btn-sm btn-danger" type="button" onclick="abrirModalEliminarCiclo(${ciclo.id})">Eliminar</button>
-            </td>
-        </tr>`;
-    }).join('');
-}
-
-function renderizarMaestrias(maestrias) {
-    if (!maestriasBody) return;
-    if (!maestrias || !maestrias.length) {
-        maestriasBody.innerHTML = '<tr><td colspan="6">No hay maestrías registradas.</td></tr>';
-        return;
-    }
-
-    maestriasBody.innerHTML = maestrias.map(maestria => {
-        const duracion = maestria.duration
-            ? `${escaparHtml(maestria.duration)} semestre${maestria.duration == 1 ? '' : 's'}`
-            : '-';
-        return `
-        <tr>
-            <td>#${escaparHtml(maestria.id)}</td>
-            <td>${escaparHtml(maestria.name)}</td>
-            <td>${escaparHtml(maestria.description || '-')}</td>
-            <td>${duracion}</td>
-            <td><span class="badge ${maestria.status ? 'badge-success' : 'badge-warning'}">
-                ${maestria.status ? 'Activo' : 'Inactivo'}
-            </span></td>
-            <td>
-                <button class="btn-sm btn-warning" type="button" onclick="abrirModalEditarMaestria(${maestria.id})">Editar</button>
-                <button class="btn-sm btn-danger" type="button" onclick="abrirModalEliminarMaestria(${maestria.id})">Eliminar</button>
             </td>
         </tr>`;
     }).join('');
@@ -319,20 +424,6 @@ async function cargarCiclos() {
     }
 }
 
-async function cargarMaestrias() {
-    try {
-        const response = await fetch('/api/maestrias');
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Error al cargar maestrías');
-        renderizarMaestrias(data);
-    } catch (error) {
-        console.error('Error al cargar maestrías:', error);
-        if (maestriasBody) {
-            maestriasBody.innerHTML = '<tr><td colspan="6">No se pudieron cargar las maestrías.</td></tr>';
-        }
-    }
-}
-
 async function cargarMaterias() {
     try {
         const response = await fetch('/api/materias');
@@ -368,16 +459,6 @@ window.abrirModalEliminarCiclo = async function(id) {
         if (response.ok) nombre = ciclo.name;
     } catch (e) {}
     mostrarModalEliminar(id, 'ciclos', nombre);
-};
-
-window.abrirModalEliminarMaestria = async function(id) {
-    let nombre = `#${id}`;
-    try {
-        const response = await fetch(`/api/maestrias/${id}`);
-        const maestria = await response.json();
-        if (response.ok) nombre = maestria.name;
-    } catch (e) {}
-    mostrarModalEliminar(id, 'maestrias', nombre);
 };
 
 window.abrirModalEliminarMateria = async function(id) {
@@ -448,7 +529,6 @@ async function abrirModalCrear() {
     if (modalAgregarEstudiante) modalAgregarEstudiante.classList.remove('hidden');
 }
 
-// Cargar la lista de grados dentro del <select id="estGrado">
 let gradosCache = null;
 async function cargarGradosEnSelect() {
     const select = document.getElementById('estGrado');
@@ -713,126 +793,7 @@ if (formAgregarCiclo) {
 }
 
 // ==========================================
-// MODAL CREAR / EDITAR MAESTRÍA
-// ==========================================
-function cerrarModalMaestria() {
-    if (modalAgregarMaestria) modalAgregarMaestria.classList.add('hidden');
-    if (formAgregarMaestria) formAgregarMaestria.reset();
-    editandoMaestriaId = null;
-    if (maestriaError) { maestriaError.textContent = ''; maestriaError.classList.remove('show'); }
-    if (maestriaSuccess) { maestriaSuccess.textContent = ''; maestriaSuccess.classList.remove('show'); }
-}
-
-function abrirModalCrearMaestria() {
-    cerrarModalMaestria();
-    if (modalAgregarMaestria) {
-        const titulo = modalAgregarMaestria.querySelector('h3');
-        if (titulo) titulo.textContent = 'Agregar Maestría';
-        modalAgregarMaestria.classList.remove('hidden');
-    }
-}
-
-window.abrirModalEditarMaestria = async function(id) {
-    try {
-        const response = await fetch(`/api/maestrias/${id}`);
-        const maestria = await response.json();
-
-        if (!response.ok) {
-            alert(maestria.error || 'No se pudieron obtener los datos de la maestría');
-            return;
-        }
-
-        editandoMaestriaId = id;
-
-        document.getElementById('maestriaNombre').value = maestria.name || '';
-        document.getElementById('maestriaDescripcion').value = maestria.description || '';
-        document.getElementById('maestriaDuracion').value = maestria.duration || '';
-        const creditosEl = document.getElementById('maestriaCreditos');
-        if (creditosEl) creditosEl.value = maestria.credits || '';
-
-        if (modalAgregarMaestria) {
-            const titulo = modalAgregarMaestria.querySelector('h3');
-            if (titulo) titulo.textContent = 'Editar Maestría';
-            modalAgregarMaestria.classList.remove('hidden');
-        }
-    } catch (error) {
-        console.error('Error al obtener maestría:', error);
-        alert('Error de conexión al cargar la maestría');
-    }
-};
-
-if (btnAgregarMaestria) btnAgregarMaestria.addEventListener('click', abrirModalCrearMaestria);
-if (btnCerrarModalMaestria) btnCerrarModalMaestria.addEventListener('click', cerrarModalMaestria);
-if (btnCancelarMaestria) btnCancelarMaestria.addEventListener('click', cerrarModalMaestria);
-if (modalAgregarMaestria) {
-    modalAgregarMaestria.addEventListener('click', (e) => {
-        if (e.target === modalAgregarMaestria) cerrarModalMaestria();
-    });
-}
-
-if (formAgregarMaestria) {
-    formAgregarMaestria.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const nombre = document.getElementById('maestriaNombre').value.trim();
-        const descripcion = document.getElementById('maestriaDescripcion').value.trim();
-        const duracion = document.getElementById('maestriaDuracion').value;
-        const creditosEl = document.getElementById('maestriaCreditos');
-        const creditos = creditosEl ? creditosEl.value : '';
-
-        if (!nombre) {
-            maestriaError.textContent = 'El nombre de la maestría es requerido';
-            maestriaError.classList.add('show');
-            return;
-        }
-
-        if (!duracion || parseInt(duracion, 10) < 1) {
-            maestriaError.textContent = 'La duración en semestres es requerida y debe ser mayor a 0';
-            maestriaError.classList.add('show');
-            return;
-        }
-
-        const datosMaestria = {
-            name: nombre,
-            description: descripcion,
-            duration: parseInt(duracion, 10),
-            credits: creditos ? parseInt(creditos, 10) : null
-        };
-
-        const url = editandoMaestriaId ? `/api/maestrias/${editandoMaestriaId}` : '/api/maestrias';
-        const metodo = editandoMaestriaId ? 'PUT' : 'POST';
-
-        try {
-            const response = await fetch(url, {
-                method: metodo,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datosMaestria)
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                maestriaSuccess.textContent = editandoMaestriaId ? '¡Maestría actualizada con éxito!' : '¡Maestría registrada con éxito!';
-                maestriaSuccess.classList.add('show');
-
-                setTimeout(() => {
-                    cerrarModalMaestria();
-                    cargarMaestrias();
-                }, 1200);
-            } else {
-                maestriaError.textContent = data.error || 'Error al guardar la maestría';
-                maestriaError.classList.add('show');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            maestriaError.textContent = 'Error de conexión con el servidor';
-            maestriaError.classList.add('show');
-        }
-    });
-}
-
-// ==========================================
-// MODAL CREAR / EDITAR MATERIA
+// MODAL CREAR / EDITAR MATERIA (courses)
 // ==========================================
 function cerrarModalMateria() {
     if (modalAgregarMateria) modalAgregarMateria.classList.add('hidden');
@@ -999,9 +960,8 @@ navLinks.forEach(link => {
             if (sectionId === 'estudiantes') {
                 cargarEstudiantes();
             } else if (sectionId === 'ciclosescolares') {
+                volverPaso(1);
                 cargarCiclos();
-            } else if (sectionId === 'maestrias') {
-                cargarMaestrias();
             } else if (sectionId === 'materias') {
                 cargarMaterias();
             }
