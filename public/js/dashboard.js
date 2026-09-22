@@ -70,6 +70,146 @@ let cicloSeleccionado = null;
 let carreraSeleccionada = null;
 
 // ==========================================
+// MODAL INSCRIBIR ESTUDIANTE A CICLO / CARRERA
+// ==========================================
+const btnInscribirEstudianteCiclo = document.getElementById('btnInscribirEstudianteCiclo');
+const modalInscribirEstudianteCiclo = document.getElementById('modalInscribirEstudianteCiclo');
+const btnCerrarModalInscribir = document.getElementById('btnCerrarModalInscribir');
+const btnCancelarInscribir = document.getElementById('btnCancelarInscribir');
+const formInscribirEstudianteCiclo = document.getElementById('formInscribirEstudianteCiclo');
+const inscripcionError = document.getElementById('inscripcionError');
+const inscripcionSuccess = document.getElementById('inscripcionSuccess');
+
+function cerrarModalInscribir() {
+    if (modalInscribirEstudianteCiclo) modalInscribirEstudianteCiclo.classList.add('hidden');
+    if (formInscribirEstudianteCiclo) formInscribirEstudianteCiclo.reset();
+    if (inscripcionError) { inscripcionError.textContent = ''; inscripcionError.classList.remove('show'); }
+    if (inscripcionSuccess) { inscripcionSuccess.textContent = ''; inscripcionSuccess.classList.remove('show'); }
+}
+
+async function abrirModalInscribir() {
+    if (!cicloSeleccionado || !carreraSeleccionada) {
+        alert('Por favor, asegúrate de seleccionar un ciclo y una carrera primero.');
+        return;
+    }
+
+    document.getElementById('inscripcionCicloNombre').value = cicloSeleccionado.name;
+    document.getElementById('inscripcionCarreraNombre').value = carreraSeleccionada.name;
+
+    // Cargar la lista general de estudiantes disponibles
+    const selectEstudiante = document.getElementById('inscripcionEstudianteSelect');
+    selectEstudiante.innerHTML = '<option value="">Cargando estudiantes...</option>';
+
+    try {
+        const response = await fetch('/api/estudiantes');
+        const estudiantes = await response.json();
+
+        if (response.ok && estudiantes.length) {
+            selectEstudiante.innerHTML = '<option value="">Seleccionar estudiante...</option>' +
+                estudiantes.map(e => `<option value="${e.id}">${escaparHtml(nombreEstudiante(e))}</option>`).join('');
+        } else {
+            selectEstudiante.innerHTML = '<option value="">No hay estudiantes disponibles</option>';
+        }
+    } catch (error) {
+        console.error('Error al cargar estudiantes:', error);
+        selectEstudiante.innerHTML = '<option value="">Error al cargar la lista</option>';
+    }
+
+    if (modalInscribirEstudianteCiclo) {
+        modalInscribirEstudianteCiclo.classList.remove('hidden');
+    }
+}
+
+// Listeners para abrir y cerrar el modal
+if (btnInscribirEstudianteCiclo) btnInscribirEstudianteCiclo.addEventListener('click', abrirModalInscribir);
+if (btnCerrarModalInscribir) btnCerrarModalInscribir.addEventListener('click', cerrarModalInscribir);
+if (btnCancelarInscribir) btnCancelarInscribir.addEventListener('click', cerrarModalInscribir);
+
+if (modalInscribirEstudianteCiclo) {
+    modalInscribirEstudianteCiclo.addEventListener('click', (e) => {
+        if (e.target === modalInscribirEstudianteCiclo) cerrarModalInscribir();
+    });
+}
+
+// Guardar la inscripción enviando a la API
+if (formInscribirEstudianteCiclo) {
+    formInscribirEstudianteCiclo.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const selectEstudiante = document.getElementById('inscripcionEstudianteSelect');
+        const idEstudiante = selectEstudiante ? selectEstudiante.value : null;
+
+        // Validaciones en Frontend
+        if (!cicloSeleccionado || !cicloSeleccionado.id) {
+            if (inscripcionError) {
+                inscripcionError.textContent = 'Por favor selecciona un ciclo escolar válido.';
+                inscripcionError.classList.add('show');
+            }
+            return;
+        }
+
+        if (!carreraSeleccionada || !carreraSeleccionada.id) {
+            if (inscripcionError) {
+                inscripcionError.textContent = 'Debe seleccionar una materia/carrera del ciclo.';
+                inscripcionError.classList.add('show');
+            }
+            return;
+        }
+
+        if (!idEstudiante) {
+            if (inscripcionError) {
+                inscripcionError.textContent = 'Por favor selecciona un estudiante.';
+                inscripcionError.classList.add('show');
+            }
+            return;
+        }
+
+        // Construir el payload adaptado al controlador (idstudent, idcycle, idgrade)
+        const datosInscripcion = {
+            idstudent: parseInt(idEstudiante, 10),
+            idcycle: parseInt(cicloSeleccionado.id, 10),
+            idgrade: parseInt(carreraSeleccionada.id, 10) // <--- CAMBIO AQUÍ: Usar idgrade
+        };
+
+        try {
+            const response = await fetch('/api/inscripciones', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datosInscripcion)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                if (inscripcionSuccess) {
+                    inscripcionSuccess.textContent = '¡Estudiante inscrito con éxito!';
+                    inscripcionSuccess.classList.add('show');
+                }
+                if (inscripcionError) {
+                    inscripcionError.textContent = '';
+                    inscripcionError.classList.remove('show');
+                }
+                setTimeout(() => {
+                    cerrarModalInscribir();
+                    cargarEstudiantesCicloCarrera(cicloSeleccionado.id, carreraSeleccionada.id);
+                }, 1200);
+            } else {
+                if (inscripcionError) {
+                    inscripcionError.textContent = data.error || 'Error al inscribir al estudiante.';
+                    inscripcionError.classList.add('show');
+                }
+            }
+        } catch (error) {
+            console.error('Error al guardar inscripción:', error);
+            if (inscripcionError) {
+                inscripcionError.textContent = 'Error de conexión con el servidor.';
+                inscripcionError.classList.add('show');
+            }
+        }
+    });
+}
+
+// ==========================================
 // UTILIDADES Y VALIDACIONES
 // ==========================================
 const REGEX_NOMBRE = /^[a-záéíóúàâäãèêëìîïòôöõùûüüñçA-ZÁÉÍÓÚÀÂÄÃÈÊËÌÎÏÒÔÖÕÙÛÜÜÑÇ\s'-]{2,100}$/;
