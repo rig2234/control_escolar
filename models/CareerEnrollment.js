@@ -32,14 +32,14 @@ class CareerEnrollment {
       }
 
       // 2. Obtener todas las materias asociadas a la carrera (tabla gradecourses / courses)
-      const reqCourses = new sql.Request(transaction);
-      reqCourses.input('idgrade', sql.Int, idgrade);
-      const resCourses = await reqCourses.query(`
-        SELECT c.id AS idcourse, c.name AS courseName
-        FROM gradecourses gc
-        INNER JOIN courses c ON c.id = gc.idcourse
-        WHERE gc.idgrade = @idgrade AND c.status = 1
-      `);
+      // 2. Obtener el curso/carrera directamente desde la tabla courses
+const reqCourses = new sql.Request(transaction);
+reqCourses.input('idgrade', sql.Int, idgrade);
+const resCourses = await reqCourses.query(`
+  SELECT c.id AS idcourse, c.name AS courseName
+  FROM courses c
+  WHERE c.id = @idgrade AND c.status = 1
+`);
 
       const materias = resCourses.recordset;
 
