@@ -172,7 +172,7 @@ if (formInscribirEstudianteCiclo) {
         };
 
         try {
-            const response = await fetch('/api/inscripciones', {
+            const response = await fetch('/api/enrollment/career', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(datosInscripcion)
