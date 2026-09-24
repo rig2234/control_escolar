@@ -151,20 +151,49 @@ exports.cambiarContraseña = async (req, res) => {
   }
 };
 
+// --- AUTENTICACIÓN CON SESIONES ---
+
 exports.autenticar = async (req, res) => {
   try {
     const { login, password } = req.body;
+
+    if (!login || !password) {
+      return res.status(400).json({ error: 'Login y password requeridos' });
+    }
+
     const usuario = await User.autenticar(login, password);
 
-    // Guardar usuario en la sesión
+    // Guardar datos del usuario en la sesión HTTP-Only
     req.session.usuario = {
       id: usuario.id,
       login: usuario.login,
       iduser: usuario.iduser
     };
 
-    res.json({ mensaje: 'Autenticación exitosa', usuario });
+    res.json({ 
+      mensaje: 'Autenticación exitosa',
+      usuario: req.session.usuario 
+    });
   } catch (error) {
     res.status(401).json({ error: error.message });
   }
+};
+
+// Obtener el usuario activo desde la sesión (para el frontend/dashboard)
+exports.obtenerSesionActual = (req, res) => {
+  if (req.session && req.session.usuario) {
+    return res.json({ usuario: req.session.usuario });
+  }
+  return res.status(401).json({ error: 'No hay sesión activa' });
+};
+
+// Cerrar sesión y destruir cookie
+exports.logout = (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error al cerrar sesión' });
+    }
+    res.clearCookie('connect.sid'); // Limpia la cookie predeterminada de express-session
+    res.json({ mensaje: 'Sesión cerrada correctamente' });
+  });
 };

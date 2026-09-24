@@ -1,21 +1,22 @@
 const express = require('express');
-const session = require('express-session'); // <--- Importar express-session
+const session = require('express-session');
 const path = require('path');
 require('dotenv').config();
 
 const app = express();
 
-// Middleware
+// Middleware para procesar JSON y Formularios (¡Indispensable para req.body!)
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Configuración de Sesiones
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'clave_secreta_control_escolar', // Usar una clave en .env o por defecto
+    secret: process.env.SESSION_SECRET || 'clave_secreta_control_escolar',
     resave: false,
     saveUninitialized: false,
     cookie: {
         httpOnly: true, // Protege contra ataques XSS
-        secure: process.env.NODE_ENV === 'production', // true solo si usas HTTPS en producción
+        secure: process.env.NODE_ENV === 'production', // true solo en producción con HTTPS
         maxAge: 1000 * 60 * 60 * 8 // La sesión dura 8 horas
     }
 }));
@@ -71,11 +72,10 @@ const PORT = process.env.PORT || 5000;
 
 async function iniciarServidor() {
     try {
-        // Espera a que el pool de SQL Server se conecte
         if (pool.connect) {
             await pool.connect();
         } else {
-            await pool; // Por si exportas poolPromise desde database.js
+            await pool;
         }
         console.log('Conectado a SQL Server exitosamente');
 
