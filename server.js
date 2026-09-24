@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require('express-session'); // <--- Importar express-session
 const path = require('path');
 require('dotenv').config();
 
@@ -6,6 +7,19 @@ const app = express();
 
 // Middleware
 app.use(express.json());
+
+// Configuración de Sesiones
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'clave_secreta_control_escolar', // Usar una clave en .env o por defecto
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true, // Protege contra ataques XSS
+        secure: process.env.NODE_ENV === 'production', // true solo si usas HTTPS en producción
+        maxAge: 1000 * 60 * 60 * 8 // La sesión dura 8 horas
+    }
+}));
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Importar conexión a la base de datos y rutas
@@ -14,7 +28,7 @@ const userRoutes = require('./routes/userRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const cycleRoutes = require('./routes/cycleRoutes');
 const masterRoutes = require('./routes/masteryRoutes');
-const courseRoutes = require('./routes/courseRoutes'); // <--- Importar rutas de materias
+const courseRoutes = require('./routes/courseRoutes');
 const gradeRoutes = require('./routes/gradeRoutes');
 const cycleCourseRoutes = require('./routes/cycleCourseRoutes');
 const careerEnrollmentRoutes = require('./routes/careerEnrollmentRoutes');
@@ -24,7 +38,7 @@ app.use('/api/usuarios', userRoutes);
 app.use('/api/estudiantes', studentRoutes);
 app.use('/api/ciclos', cycleRoutes);
 app.use('/api/maestrias', masterRoutes);
-app.use('/api/materias', courseRoutes); // <--- Montar endpoint /api/materias
+app.use('/api/materias', courseRoutes);
 app.use('/api/grados', gradeRoutes);
 app.use('/api/ciclomaterias', cycleCourseRoutes);
 app.use('/api/enrollment', careerEnrollmentRoutes);

@@ -154,16 +154,16 @@ exports.cambiarContraseña = async (req, res) => {
 exports.autenticar = async (req, res) => {
   try {
     const { login, password } = req.body;
-
-    if (!login || !password) {
-      return res.status(400).json({ error: 'Login y password requeridos' });
-    }
-
     const usuario = await User.autenticar(login, password);
-    res.json({ 
-      mensaje: 'Autenticación exitosa',
-      usuario 
-    });
+
+    // Guardar usuario en la sesión
+    req.session.usuario = {
+      id: usuario.id,
+      login: usuario.login,
+      iduser: usuario.iduser
+    };
+
+    res.json({ mensaje: 'Autenticación exitosa', usuario });
   } catch (error) {
     res.status(401).json({ error: error.message });
   }
