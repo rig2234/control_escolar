@@ -9,6 +9,7 @@ una vez con esa informacion se iran vinculando progresivamente
 ya esta vinculado a un ciclo debe permitir desvincular
 
 2-
+(Aqui es solo es documento en texto, no PDF ni WORD, aqui no se implementa FTP)
 una vez el curso este vinculado al ciclo debe poder vincular documento/s a ese curso, que seran los documentos que pide el curso al estudiante para su inscripcion
 
 una vez el curso este vinculado al ciclo debe poder vincular el estudiante a ese curso que esta vinculado a ese ciclo

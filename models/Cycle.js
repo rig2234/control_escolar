@@ -8,16 +8,30 @@ class Cycle {
       const request = new sql.Request(pool);
       const resultado = await request.query(`
         SELECT
-          id,
-          name,
-          initialdate,
-          finaldate,
-          iduser,
-          date,
-          status
-        FROM cycles
-        WHERE status = 1
-        ORDER BY initialdate DESC
+          c.id,
+          c.name,
+          c.initialdate,
+          c.finaldate,
+          c.iduser,
+          c.date,
+          c.status,
+          (
+            SELECT COUNT(DISTINCT cc.idcourse)
+            FROM cyclecourses cc
+            WHERE cc.idcycle = c.id AND cc.status = 1
+          ) AS courseCount,
+          (
+            SELECT COUNT(DISTINCT ccs.idstudent)
+            FROM cyclecourses cc
+            INNER JOIN cyclecoursestudents ccs
+              ON ccs.idcyclecourse = cc.id AND ccs.status = 1
+            INNER JOIN students s
+              ON s.id = ccs.idstudent AND s.status = 1
+            WHERE cc.idcycle = c.id AND cc.status = 1
+          ) AS studentCount
+        FROM cycles c
+        WHERE c.status = 1
+        ORDER BY c.initialdate DESC
       `);
 
       return resultado.recordset;

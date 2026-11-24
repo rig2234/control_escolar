@@ -107,19 +107,20 @@ async function abrirModalInscribir() {
     document.getElementById('inscripcionCicloNombre').value = cicloSeleccionado.name;
     document.getElementById('inscripcionCarreraNombre').value = carreraSeleccionada.name;
 
-    // Cargar la lista general de estudiantes disponibles
     const selectEstudiante = document.getElementById('inscripcionEstudianteSelect');
     selectEstudiante.innerHTML = '<option value="">Cargando estudiantes...</option>';
 
     try {
-        const response = await fetch('/api/estudiantes');
+        const response = await fetch(`/api/ciclomaterias/${carreraSeleccionada.idcyclecourse}/estudiantes`);
         const estudiantes = await response.json();
+        if (!response.ok) throw new Error(estudiantes.error || 'No se pudieron cargar los estudiantes');
+        const disponibles = estudiantes.filter(estudiante => !estudiante.related);
 
-        if (response.ok && estudiantes.length) {
+        if (disponibles.length) {
             selectEstudiante.innerHTML = '<option value="">Seleccionar estudiante...</option>' +
-                estudiantes.map(e => `<option value="${e.id}">${escaparHtml(nombreEstudiante(e))}</option>`).join('');
+                disponibles.map(estudiante => `<option value="${estudiante.idstudent}">${escaparHtml(nombreEstudiante(estudiante))}</option>`).join('');
         } else {
-            selectEstudiante.innerHTML = '<option value="">No hay estudiantes disponibles</option>';
+            selectEstudiante.innerHTML = '<option value="">Todos los estudiantes ya están vinculados</option>';
         }
     } catch (error) {
         console.error('Error al cargar estudiantes:', error);
@@ -159,9 +160,9 @@ if (formInscribirEstudianteCiclo) {
             return;
         }
 
-        if (!carreraSeleccionada || !carreraSeleccionada.id) {
+        if (!carreraSeleccionada || !carreraSeleccionada.idcyclecourse) {
             if (inscripcionError) {
-                inscripcionError.textContent = 'Debe seleccionar una materia/carrera del ciclo.';
+                inscripcionError.textContent = 'Debe seleccionar un curso vinculado al ciclo.';
                 inscripcionError.classList.add('show');
             }
             return;
@@ -175,19 +176,16 @@ if (formInscribirEstudianteCiclo) {
             return;
         }
 
-        // Construir el payload adaptado al controlador (idstudent, idcycle, idgrade)
-        const datosInscripcion = {
-            idstudent: parseInt(idEstudiante, 10),
-            idcycle: parseInt(cicloSeleccionado.id, 10),
-            idgrade: parseInt(carreraSeleccionada.id, 10) // <--- CAMBIO AQUÍ: Usar idgrade
-        };
-
         try {
-            const response = await fetch('/api/enrollment/career', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datosInscripcion)
-            });
+            const usuarioActual = JSON.parse(localStorage.getItem('usuarioActual') || '{}');
+            const response = await fetch(
+                `/api/ciclomaterias/${carreraSeleccionada.idcyclecourse}/estudiantes/${idEstudiante}`,
+                {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ related: true, iduser: usuarioActual.id })
+                }
+            );
 
             const data = await response.json();
 
@@ -200,9 +198,12 @@ if (formInscribirEstudianteCiclo) {
                     inscripcionError.textContent = '';
                     inscripcionError.classList.remove('show');
                 }
-                setTimeout(() => {
+                setTimeout(async () => {
                     cerrarModalInscribir();
-                    cargarEstudiantesCicloCarrera(cicloSeleccionado.id, carreraSeleccionada.id);
+                    await Promise.all([
+                        cargarEstudiantesCicloCarrera(carreraSeleccionada.idcyclecourse),
+                        cargarCarrerasDelCiclo(cicloSeleccionado.id)
+                    ]);
                 }, 1200);
             } else {
                 if (inscripcionError) {
@@ -275,11 +276,11 @@ window.seleccionarCiclo = async function(idCiclo, nombreCiclo) {
     await cargarCarrerasDelCiclo(idCiclo);
 };
 
-// Cargar Materias/Cursos desde la tabla "courses" para el Paso 2
+// Cargar cursos y sus relaciones para el ciclo seleccionado
 async function cargarCarrerasDelCiclo(idCiclo) {
-    const container = document.getElementById('carrerasCicloContainer');
-    if (!container) return;
-    container.innerHTML = '<p>Cargando cursos...</p>';
+    const body = document.getElementById('carrerasCicloBody');
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="5">Cargando cursos...</td></tr>';
 
     try {
         const [materiasResponse, asignacionesResponse] = await Promise.all([
@@ -296,8 +297,12 @@ async function cargarCarrerasDelCiclo(idCiclo) {
         }
 
         if (!materias.length) {
-            container.innerHTML = '<p>No hay cursos disponibles.</p>';
+            body.innerHTML = '<tr><td colspan="5">No hay cursos disponibles.</td></tr>';
             return;
+        }
+
+        if (!Array.isArray(materias) || !Array.isArray(asignaciones)) {
+            throw new Error('La respuesta de cursos no tiene un formato válido');
         }
 
         const asignacionesPorCurso = new Map(asignaciones.map(asignacion => [
@@ -305,45 +310,57 @@ async function cargarCarrerasDelCiclo(idCiclo) {
             asignacion
         ]));
 
-        container.innerHTML = materias.map(materia => {
+        body.innerHTML = materias.map(materia => {
             const asignacion = asignacionesPorCurso.get(Number(materia.id));
-            const acciones = asignacion
-                ? `<button class="btn-sm btn-primary" type="button" data-action="seleccionar"
-                    data-course-id="${materia.id}" data-course-name="${escaparHtml(materia.name)}">Ver alumnos</button>
-                   <button class="btn-sm btn-danger" type="button" data-action="desvincular"
-                    data-cycle-course-id="${asignacion.id}" data-course-id="${materia.id}">Desvincular</button>`
-                : `<button class="btn-sm btn-primary" type="button" data-action="vincular"
-                    data-course-id="${materia.id}">Vincular al ciclo</button>`;
-
             return `
-            <div class="carrera-card-select">
-                <h4 style="color: var(--primary); font-size: 16px; margin-bottom: 6px;">${escaparHtml(materia.name)}</h4>
-                <p style="font-size: 13px; color: var(--text-light);">${asignacion ? 'Vinculado a este ciclo' : 'No vinculado'}</p>
-                <div class="curso-card-actions">${acciones}</div>
-            </div>
-            `;
+                <tr>
+                    <td>${escaparHtml(materia.name)}</td>
+                    <td>${asignacion ? escaparHtml(asignacion.documentCount || 0) : '0'}</td>
+                    <td>${asignacion ? escaparHtml(asignacion.studentCount || 0) : '0'}</td>
+                    <td>
+                        <input type="checkbox" data-action="relacionar-curso"
+                            data-course-id="${escaparHtml(materia.id)}"
+                            aria-label="Vincular ${escaparHtml(materia.name)} al ciclo"
+                            ${asignacion ? 'checked' : ''}>
+                    </td>
+                    <td>${asignacion
+                        ? `<button class="btn-sm btn-primary" type="button" data-action="gestionar"
+                            data-course-id="${escaparHtml(materia.id)}"
+                            data-course-name="${escaparHtml(materia.name)}"
+                            data-cycle-course-id="${escaparHtml(asignacion.id)}">Gestionar</button>`
+                        : '<span>-</span>'}</td>
+                </tr>`;
         }).join('');
 
-        container.onclick = async (event) => {
-            const button = event.target.closest('button[data-action]');
-            if (!button) return;
+        body.onchange = async (event) => {
+            const checkbox = event.target.closest('input[data-action="relacionar-curso"]');
+            if (!checkbox) return;
 
-            const idCurso = Number(button.dataset.courseId);
-            if (button.dataset.action === 'seleccionar') {
-                await seleccionarCarrera(idCurso, button.dataset.courseName);
-            } else if (button.dataset.action === 'vincular') {
+            const idCurso = Number(checkbox.dataset.courseId);
+            if (checkbox.checked) {
                 await vincularCursoAlCiclo(idCurso);
-            } else if (button.dataset.action === 'desvincular') {
+            } else {
+                const nombreCurso = checkbox.closest('tr').querySelector('td').textContent;
                 await desvincularCursoDelCiclo(
-                    Number(button.dataset.cycleCourseId),
+                    Number(asignacionesPorCurso.get(idCurso).id),
                     idCurso,
-                    button.closest('.carrera-card-select').querySelector('h4').textContent
+                    nombreCurso
                 );
             }
         };
+
+        body.onclick = async (event) => {
+            const button = event.target.closest('button[data-action="gestionar"]');
+            if (!button) return;
+            await seleccionarCarrera(
+                Number(button.dataset.courseId),
+                button.dataset.courseName,
+                Number(button.dataset.cycleCourseId)
+            );
+        };
     } catch (error) {
         console.error('Error al cargar cursos del ciclo:', error);
-        container.innerHTML = '<p>No se pudieron cargar los cursos del ciclo.</p>';
+        body.innerHTML = '<tr><td colspan="5">No se pudieron cargar los cursos del ciclo.</td></tr>';
     }
 }
 
@@ -366,11 +383,15 @@ async function vincularCursoAlCiclo(idCurso) {
     } catch (error) {
         console.error('Error al vincular curso al ciclo:', error);
         alert(error.message || 'No se pudo vincular el curso al ciclo');
+        if (cicloSeleccionado) await cargarCarrerasDelCiclo(cicloSeleccionado.id);
     }
 }
 
 async function desvincularCursoDelCiclo(idAsignacion, idCurso, nombreCurso) {
-    if (!confirm(`¿Deseas desvincular el curso "${nombreCurso}" de este ciclo?`)) return;
+    if (!confirm(`¿Deseas desvincular el curso "${nombreCurso}" de este ciclo?`)) {
+        await cargarCarrerasDelCiclo(cicloSeleccionado.id);
+        return;
+    }
 
     try {
         const response = await fetch(`/api/ciclomaterias/${idAsignacion}`, { method: 'DELETE' });
@@ -384,15 +405,18 @@ async function desvincularCursoDelCiclo(idAsignacion, idCurso, nombreCurso) {
     } catch (error) {
         console.error('Error al desvincular curso del ciclo:', error);
         alert(error.message || 'No se pudo desvincular el curso del ciclo');
+        if (cicloSeleccionado) await cargarCarrerasDelCiclo(cicloSeleccionado.id);
     }
 }
 
-// Paso 2 -> Paso 3: Seleccionar un curso vinculado al ciclo
-window.seleccionarCarrera = async function(idCarrera, nombreCarrera) {
-    carreraSeleccionada = { id: idCarrera, name: nombreCarrera };
+// Paso 2 -> Paso 3: Gestionar un curso vinculado al ciclo
+window.seleccionarCarrera = async function(idCarrera, nombreCarrera, idcyclecourse) {
+    carreraSeleccionada = { id: idCarrera, name: nombreCarrera, idcyclecourse };
     
     const labelCarrera = document.getElementById('selectedCarreraText');
     if (labelCarrera) labelCarrera.textContent = nombreCarrera;
+    const cursoGestionNombre = document.getElementById('cursoGestionNombre');
+    if (cursoGestionNombre) cursoGestionNombre.textContent = nombreCarrera;
 
     const pasoCarreras = document.getElementById('pasoCarreras');
     const pasoEstudiantes = document.getElementById('pasoEstudiantes');
@@ -404,37 +428,175 @@ window.seleccionarCarrera = async function(idCarrera, nombreCarrera) {
     if (step2Btn) step2Btn.classList.remove('active');
     if (step3Btn) { step3Btn.classList.remove('disabled'); step3Btn.classList.add('active'); }
 
-    await cargarEstudiantesCicloCarrera(cicloSeleccionado.id, carreraSeleccionada.id);
+    mostrarPanelCurso('documentosCursoPanel');
+    await Promise.all([
+        cargarDocumentosDeCurso(idcyclecourse),
+        cargarEstudiantesCicloCarrera(idcyclecourse)
+    ]);
 };
 
-// Cargar alumnos inscritos para el Paso 3
-async function cargarEstudiantesCicloCarrera(idCiclo, idCarrera) {
-    const body = document.getElementById('estudiantesCicloBody');
+function mostrarPanelCurso(panelId) {
+    document.querySelectorAll('.curso-gestion-panel').forEach(panel => {
+        panel.classList.toggle('hidden', panel.id !== panelId);
+    });
+    document.querySelectorAll('.curso-tab').forEach(tab => {
+        const active = tab.dataset.panel === panelId;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+    });
+}
+
+document.querySelectorAll('.curso-tab').forEach(tab => {
+    tab.addEventListener('click', () => mostrarPanelCurso(tab.dataset.panel));
+});
+
+async function cargarDocumentosDeCurso(idcyclecourse) {
+    const body = document.getElementById('documentosCursoBody');
     if (!body) return;
-    body.innerHTML = '<tr><td colspan="5">Cargando alumnos inscritos...</td></tr>';
+    body.innerHTML = '<tr><td colspan="4">Cargando documentos...</td></tr>';
 
     try {
-        const response = await fetch(`/api/estudiantes?ciclo=${idCiclo}&carrera=${idCarrera}`);
-        const estudiantes = await response.json();
+        const response = await fetch(`/api/ciclomaterias/${idcyclecourse}/documentos`);
+        const documentos = await response.json();
+        if (!response.ok) throw new Error(documentos.error || 'No se pudieron cargar los documentos');
 
-        if (!response.ok || !estudiantes.length) {
-            body.innerHTML = '<tr><td colspan="5">No hay estudiantes inscritos en esta materia para el ciclo seleccionado.</td></tr>';
+        if (!documentos.length) {
+            body.innerHTML = '<tr><td colspan="4">No hay documentos activos en el catálogo.</td></tr>';
+            return;
+        }
+
+        body.innerHTML = documentos.map(documento => {
+            const related = documento.related === true || Number(documento.related) === 1;
+            const obligatory = documento.obligatory === true || Number(documento.obligatory) === 1;
+            return `
+                <tr>
+                    <td>${escaparHtml(documento.documentName)}</td>
+                    <td>${escaparHtml(documento.abbreviation || '-')}</td>
+                    <td>
+                        <input type="checkbox" data-action="relacionar-documento"
+                            data-document-type-id="${escaparHtml(documento.iddocumenttype)}"
+                            aria-label="Vincular ${escaparHtml(documento.documentName)}"
+                            ${related ? 'checked' : ''}>
+                    </td>
+                    <td>
+                        <input type="checkbox" data-action="documento-obligatorio"
+                            data-document-type-id="${escaparHtml(documento.iddocumenttype)}"
+                            aria-label="Marcar ${escaparHtml(documento.documentName)} como obligatorio"
+                            ${related && obligatory ? 'checked' : ''}
+                            ${related ? '' : 'disabled'}>
+                    </td>
+                </tr>`;
+        }).join('');
+
+        body.onchange = async (event) => {
+            const checkbox = event.target.closest('input[data-document-type-id]');
+            if (!checkbox) return;
+            const row = checkbox.closest('tr');
+            const related = checkbox.dataset.action === 'documento-obligatorio' || checkbox.checked;
+            const obligatoryCheckbox = row.querySelector('input[data-action="documento-obligatorio"]');
+            const obligatory = related && obligatoryCheckbox.checked;
+            await actualizarRelacionDocumento(
+                Number(checkbox.dataset.documentTypeId),
+                related,
+                obligatory
+            );
+        };
+    } catch (error) {
+        console.error('Error al cargar documentos del curso:', error);
+        body.innerHTML = '<tr><td colspan="4">No se pudieron cargar los documentos del curso.</td></tr>';
+    }
+}
+
+async function actualizarRelacionDocumento(iddocumenttype, related, obligatory) {
+    try {
+        const usuarioActual = JSON.parse(localStorage.getItem('usuarioActual') || '{}');
+        const response = await fetch(
+            `/api/ciclomaterias/${carreraSeleccionada.idcyclecourse}/documentos/${iddocumenttype}`,
+            {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ related, obligatory, iduser: usuarioActual.id })
+            }
+        );
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'No se pudo actualizar el documento');
+
+        await Promise.all([
+            cargarDocumentosDeCurso(carreraSeleccionada.idcyclecourse),
+            cargarCarrerasDelCiclo(cicloSeleccionado.id)
+        ]);
+    } catch (error) {
+        console.error('Error al actualizar documento del curso:', error);
+        alert(error.message || 'No se pudo actualizar el documento del curso');
+        await cargarDocumentosDeCurso(carreraSeleccionada.idcyclecourse);
+    }
+}
+
+// Cargar todos los alumnos activos y su estado de vinculación al curso
+async function cargarEstudiantesCicloCarrera(idcyclecourse) {
+    const body = document.getElementById('estudiantesCicloBody');
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="3">Cargando estudiantes...</td></tr>';
+
+    try {
+        const response = await fetch(`/api/ciclomaterias/${idcyclecourse}/estudiantes`);
+        const estudiantes = await response.json();
+        if (!response.ok) throw new Error(estudiantes.error || 'No se pudieron cargar los estudiantes');
+
+        if (!estudiantes.length) {
+            body.innerHTML = '<tr><td colspan="3">No hay estudiantes activos registrados.</td></tr>';
             return;
         }
 
         body.innerHTML = estudiantes.map(est => `
             <tr>
-                <td>#${escaparHtml(est.id)}</td>
                 <td>${escaparHtml(nombreEstudiante(est))}</td>
-                <td>${escaparHtml(est.CURP || 'N/A')}</td>
-                <td><span class="badge badge-success">Inscrito</span></td>
+                <td>${escaparHtml(est.documentCount || 0)}</td>
                 <td>
-                    <button class="btn-sm btn-info" onclick="abrirModalVer(${est.id})">Ver</button>
+                    <input type="checkbox" data-action="relacionar-estudiante"
+                        data-student-id="${escaparHtml(est.idstudent)}"
+                        aria-label="Vincular ${escaparHtml(nombreEstudiante(est))} al curso"
+                        ${est.related === true || Number(est.related) === 1 ? 'checked' : ''}>
                 </td>
             </tr>
         `).join('');
+
+        body.onchange = async (event) => {
+            const checkbox = event.target.closest('input[data-action="relacionar-estudiante"]');
+            if (!checkbox) return;
+            await actualizarRelacionEstudiante(
+                Number(checkbox.dataset.studentId),
+                checkbox.checked
+            );
+        };
     } catch (e) {
-        body.innerHTML = '<tr><td colspan="5">Error al cargar la lista de estudiantes.</td></tr>';
+        console.error('Error al cargar estudiantes del curso:', e);
+        body.innerHTML = '<tr><td colspan="3">No se pudieron cargar los estudiantes del curso.</td></tr>';
+    }
+}
+
+async function actualizarRelacionEstudiante(idstudent, related) {
+    try {
+        const usuarioActual = JSON.parse(localStorage.getItem('usuarioActual') || '{}');
+        const response = await fetch(
+            `/api/ciclomaterias/${carreraSeleccionada.idcyclecourse}/estudiantes/${idstudent}`,
+            {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ related, iduser: usuarioActual.id })
+            }
+        );
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'No se pudo actualizar el estudiante');
+
+        await Promise.all([
+            cargarEstudiantesCicloCarrera(carreraSeleccionada.idcyclecourse),
+            cargarCarrerasDelCiclo(cicloSeleccionado.id)
+        ]);
+    } catch (error) {
+        console.error('Error al actualizar estudiante del curso:', error);
+        alert(error.message || 'No se pudo actualizar el estudiante del curso');
+        await cargarEstudiantesCicloCarrera(carreraSeleccionada.idcyclecourse);
     }
 }
 
@@ -454,7 +616,7 @@ window.volverPaso = function(paso) {
         const labelCiclo = document.getElementById('selectedCicloText');
         const labelCarrera = document.getElementById('selectedCarreraText');
         if (labelCiclo) labelCiclo.textContent = 'Ninguno';
-        if (labelCarrera) labelCarrera.textContent = 'Ninguna';
+        if (labelCarrera) labelCarrera.textContent = 'Ninguno';
 
         if (pasoCarreras) { pasoCarreras.classList.remove('active'); pasoCarreras.classList.add('hidden'); }
         if (pasoEstudiantes) { pasoEstudiantes.classList.remove('active'); pasoEstudiantes.classList.add('hidden'); }
@@ -463,11 +625,12 @@ window.volverPaso = function(paso) {
         if (step1Btn) step1Btn.classList.add('active');
         if (step2Btn) { step2Btn.classList.remove('active'); step2Btn.classList.add('disabled'); }
         if (step3Btn) { step3Btn.classList.remove('active'); step3Btn.classList.add('disabled'); }
+        cargarCiclos();
     } else if (paso === 2 && cicloSeleccionado) {
         carreraSeleccionada = null;
         
         const labelCarrera = document.getElementById('selectedCarreraText');
-        if (labelCarrera) labelCarrera.textContent = 'Ninguna';
+        if (labelCarrera) labelCarrera.textContent = 'Ninguno';
 
         if (pasoEstudiantes) { pasoEstudiantes.classList.remove('active'); pasoEstudiantes.classList.add('hidden'); }
         if (pasoCarreras) { pasoCarreras.classList.remove('hidden'); pasoCarreras.classList.add('active'); }
@@ -583,7 +746,7 @@ function renderizarEstudiantes(estudiantes) {
 function renderizarCiclos(ciclos) {
     if (!ciclosBody) return;
     if (!ciclos || !ciclos.length) {
-        ciclosBody.innerHTML = '<tr><td colspan="6">No hay ciclos escolares registrados.</td></tr>';
+        ciclosBody.innerHTML = '<tr><td colspan="8">No hay ciclos escolares registrados.</td></tr>';
         return;
     }
 
@@ -596,6 +759,8 @@ function renderizarCiclos(ciclos) {
             <td><strong>${escaparHtml(ciclo.name)}</strong></td>
             <td>${fechaInicio}</td>
             <td>${fechaFin}</td>
+            <td>${escaparHtml(ciclo.courseCount || 0)}</td>
+            <td>${escaparHtml(ciclo.studentCount || 0)}</td>
             <td><span class="badge ${ciclo.status ? 'badge-success' : 'badge-warning'}">
                 ${ciclo.status ? 'Activo' : 'Inactivo'}
             </span></td>
@@ -680,7 +845,7 @@ async function cargarCiclos() {
     } catch (error) {
         console.error('Error al cargar ciclos:', error);
         if (ciclosBody) {
-            ciclosBody.innerHTML = '<tr><td colspan="6">No se pudieron cargar los ciclos escolares.</td></tr>';
+            ciclosBody.innerHTML = '<tr><td colspan="8">No se pudieron cargar los ciclos escolares.</td></tr>';
         }
     }
 }

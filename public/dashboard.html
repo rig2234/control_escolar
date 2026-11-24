@@ -364,7 +364,7 @@
         </button>
         <span class="step-arrow">→</span>
         <button class="step-btn disabled" id="step3Btn">
-            <span class="step-num">3</span> 3. Alumnos Inscritos
+            <span class="step-num">3</span> 3. Gestionar Curso
         </button>
     </div>
 
@@ -378,12 +378,14 @@
                         <th>Nombre del Ciclo</th>
                         <th>Año Inicio</th>
                         <th>Año Fin</th>
+                        <th>Cursos vinculados</th>
+                        <th>Estudiantes</th>
                         <th>Estado</th>
                         <th>Acción</th>
                     </tr>
                 </thead>
                 <tbody id="ciclosBody">
-                    <tr><td colspan="6">Cargando ciclos escolares...</td></tr>
+                    <tr><td colspan="8">Cargando ciclos escolares...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -392,34 +394,79 @@
     <!-- PASO 2: CURSOS VINCULADOS AL CICLO -->
     <div id="pasoCarreras" class="step-content hidden">
         <div class="view-header" style="margin-top: 15px;">
-            <h4>Cursos disponibles para este ciclo</h4>
-        </div>
-        <div class="cards-grid" id="carrerasCicloContainer">
-            <!-- Cargas dinámicas con JS -->
-        </div>
-    </div>
-
-    <!-- PASO 3: VISTA DE ALUMNOS EN ESE CURSO Y CICLO -->
-    <div id="pasoEstudiantes" class="step-content hidden">
-        <div class="view-header" style="margin-top: 15px;">
-            <h4>Alumnos inscritos en el curso</h4>
-            <button class="btn-primary" id="btnInscribirEstudianteCiclo">+ Inscribir alumno al curso</button>
+            <h4>Cursos del ciclo: documentos y estudiantes vinculados</h4>
         </div>
         <div class="table-container">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Estudiante</th>
-                        <th>CURP</th>
-                        <th>Estado</th>
+                        <th>Curso</th>
+                        <th>Documentos</th>
+                        <th>Estudiantes</th>
+                        <th>Vincular</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="estudiantesCicloBody">
-                    <tr><td colspan="5">Seleccione una carrera para ver estudiantes...</td></tr>
+                <tbody id="carrerasCicloBody">
+                    <tr><td colspan="5">Seleccione un ciclo para ver los cursos...</td></tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- PASO 3: DOCUMENTOS Y ESTUDIANTES DEL CURSO VINCULADO -->
+    <div id="pasoEstudiantes" class="step-content hidden">
+        <div class="view-header" style="margin-top: 15px;">
+            <h4>Gestionar curso: <strong id="cursoGestionNombre">-</strong></h4>
+            <button class="btn-secondary" type="button" onclick="volverPaso(2)">Volver a cursos</button>
+        </div>
+
+        <div class="curso-gestion-tabs" role="tablist">
+            <button class="curso-tab active" type="button" data-panel="documentosCursoPanel" role="tab" aria-selected="true">
+                Documentos requeridos
+            </button>
+            <button class="curso-tab" type="button" data-panel="estudiantesCursoPanel" role="tab" aria-selected="false">
+                Estudiantes
+            </button>
+        </div>
+
+        <div id="documentosCursoPanel" class="curso-gestion-panel">
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Documento requerido</th>
+                            <th>Abreviatura</th>
+                            <th>Vincular</th>
+                            <th>Obligatorio</th>
+                        </tr>
+                    </thead>
+                    <tbody id="documentosCursoBody">
+                        <tr><td colspan="4">Seleccione un curso vinculado...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="estudiantesCursoPanel" class="curso-gestion-panel hidden">
+            <div class="view-header">
+                <h4>Estudiantes del curso</h4>
+                <button class="btn-primary" id="btnInscribirEstudianteCiclo" type="button">+ Vincular estudiante</button>
+            </div>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Estudiante</th>
+                            <th>Documentos entregados</th>
+                            <th>Vincular</th>
+                        </tr>
+                    </thead>
+                    <tbody id="estudiantesCicloBody">
+                        <tr><td colspan="3">Seleccione un curso vinculado...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </section>

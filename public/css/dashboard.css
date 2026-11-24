@@ -1230,3 +1230,38 @@ body {
     gap: 8px;
     margin-top: 16px;
 }
+
+.curso-gestion-tabs {
+    display: flex;
+    gap: 8px;
+    margin: 18px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.curso-tab {
+    padding: 10px 16px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: var(--text-light);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+}
+
+.curso-tab.active {
+    border-bottom-color: var(--primary);
+    color: var(--primary-dark);
+}
+
+.curso-gestion-panel.hidden {
+    display: none;
+}
+
+.curso-gestion-panel input[type="checkbox"],
+.table input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}

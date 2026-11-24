@@ -35,6 +35,16 @@ class CycleCourse {
         cc.idcycle,
         cc.idcourse,
         co.name AS courseName,
+        (
+          SELECT COUNT(1)
+          FROM cyclecoursesdocumenttypes ccdt
+          WHERE ccdt.idcyclecourse = cc.id AND ccdt.status = 1
+        ) AS documentCount,
+        (
+          SELECT COUNT(1)
+          FROM cyclecoursestudents ccs
+          WHERE ccs.idcyclecourse = cc.id AND ccs.status = 1
+        ) AS studentCount,
         cc.status
       FROM cyclecourses cc
       LEFT JOIN courses co ON co.id = cc.idcourse

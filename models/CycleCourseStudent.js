@@ -49,6 +49,94 @@ class CycleCourseStudent {
     return resultado.recordset;
   }
 
+  static async listarPorCurso(idcyclecourse) {
+    const request = new sql.Request(pool);
+    request.input('idcyclecourse', sql.Int, idcyclecourse);
+    const resultado = await request.query(`
+      SELECT
+        s.id AS idstudent,
+        s.name,
+        s.firstlastname,
+        s.secondlastname,
+        s.CURP,
+        ccs.id AS idcyclecoursestudent,
+        CAST(CASE WHEN ccs.id IS NULL THEN 0 ELSE 1 END AS BIT) AS related,
+        (
+          SELECT COUNT(1)
+          FROM cyclecoursestudentdocuments ccsd
+          WHERE ccsd.idcyclecoursestudent = ccs.id AND ccsd.status = 1
+        ) AS documentCount
+      FROM students s
+      LEFT JOIN cyclecoursestudents ccs
+        ON ccs.idstudent = s.id
+        AND ccs.idcyclecourse = @idcyclecourse
+        AND ccs.status = 1
+      WHERE s.status = 1
+      ORDER BY CASE WHEN ccs.id IS NULL THEN 1 ELSE 0 END,
+        s.firstlastname, s.secondlastname, s.name
+    `);
+    return resultado.recordset;
+  }
+
+  static async actualizarRelacion(idcyclecourse, idstudent, datos) {
+    const related = datos.related === true;
+    const iduser = datos.iduser ? parseInt(datos.iduser, 10) : 3;
+    const request = new sql.Request(pool);
+    request.input('idcyclecourse', sql.Int, idcyclecourse);
+    request.input('idstudent', sql.Int, idstudent);
+    request.input('iduser', sql.Int, iduser);
+    request.input('related', sql.Bit, related);
+
+    await request.query(`
+      IF NOT EXISTS (
+        SELECT 1 FROM cyclecourses
+        WHERE id = @idcyclecourse AND status = 1
+      )
+        THROW 50010, 'El curso no está vinculado a un ciclo activo', 1;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM students
+        WHERE id = @idstudent AND status = 1
+      )
+        THROW 50012, 'El estudiante no está activo', 1;
+
+      IF @related = 0
+      BEGIN
+        UPDATE cyclecoursestudents
+        SET status = 0, date = GETDATE(), iduser = @iduser
+        WHERE idcyclecourse = @idcyclecourse
+          AND idstudent = @idstudent
+          AND status = 1;
+      END
+      ELSE
+      BEGIN
+        DECLARE @RelationId INT;
+        SELECT TOP 1 @RelationId = id
+        FROM cyclecoursestudents
+        WHERE idcyclecourse = @idcyclecourse
+          AND idstudent = @idstudent
+        ORDER BY CASE WHEN status = 1 THEN 0 ELSE 1 END, id DESC;
+
+        IF @RelationId IS NULL
+        BEGIN
+          SELECT @RelationId = ISNULL(MAX(id), 0) + 1
+          FROM cyclecoursestudents;
+
+          INSERT INTO cyclecoursestudents
+            (id, idcyclecourse, idstudent, iduser, date, status)
+          VALUES
+            (@RelationId, @idcyclecourse, @idstudent, @iduser, GETDATE(), 1);
+        END
+        ELSE
+        BEGIN
+          UPDATE cyclecoursestudents
+          SET status = 1, date = GETDATE(), iduser = @iduser
+          WHERE id = @RelationId;
+        END
+      END
+    `);
+  }
+
   static async obtenerPorId(id) {
     const request = new sql.Request(pool);
     request.input('id', sql.Int, id);
