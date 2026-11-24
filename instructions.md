@@ -8,4 +8,7 @@ una vez con esa informacion se iran vinculando progresivamente
 1.1 con un ciclo ya seleccionado deben aparecer los cursos disponibles para vincular y si un curso
 ya esta vinculado a un ciclo debe permitir desvincular
 
-2- una vez el el curso este vinculado al ciclo debe poder vincular el estudiante a ese curso que esta vinculado a ese ciclo
+2-
+una vez el curso este vinculado al ciclo debe poder vincular documento/s a ese curso, que seran los documentos que pide el curso al estudiante para su inscripcion
+
+una vez el curso este vinculado al ciclo debe poder vincular el estudiante a ese curso que esta vinculado a ese ciclo

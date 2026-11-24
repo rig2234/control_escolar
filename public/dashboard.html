@@ -71,6 +71,16 @@
                     <span>Materias</span>
                 </a>
 
+                <a href="#documentos" class="nav-link" data-section="documentos">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="8" y1="13" x2="16" y2="13"></line>
+                        <line x1="8" y1="17" x2="16" y2="17"></line>
+                    </svg>
+                    <span>Documentos</span>
+                </a>
+
                 <a href="#calificaciones" class="nav-link" data-section="calificaciones">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
@@ -300,6 +310,34 @@
                                 <tr>
                                     <td colspan="5">Cargando materias...</td>
                                 </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- DOCUMENTOS REQUERIDOS SECTION -->
+                <section id="documentos" class="section">
+                    <div class="view-header">
+                        <div>
+                            <h3>Documentos requeridos</h3>
+                            <p>Administra los documentos que después podrás solicitar en cada curso</p>
+                        </div>
+                        <button class="btn-primary" id="btnAgregarDocumento">+ Agregar Documento</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Documento</th>
+                                    <th>Abreviatura</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="documentosBody">
+                                <tr><td colspan="5">Cargando documentos...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -888,6 +926,34 @@
 
                 <span class="error-message" id="materiaError"></span>
                 <span class="success-message" id="materiaSuccess"></span>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL AGREGAR / EDITAR DOCUMENTO REQUERIDO -->
+    <div id="modalAgregarDocumento" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Agregar Documento</h3>
+                <button class="btn-close" id="btnCerrarModalDocumento">&times;</button>
+            </div>
+            <form id="formAgregarDocumento" class="modal-form">
+                <div class="form-group">
+                    <label for="documentoNombre">Nombre del documento *</label>
+                    <input type="text" id="documentoNombre" maxlength="250" placeholder="Ej: Acta de nacimiento" required>
+                </div>
+                <div class="form-group">
+                    <label for="documentoAbreviatura">Abreviatura</label>
+                    <input type="text" id="documentoAbreviatura" maxlength="20" placeholder="Ej: ACT">
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" id="btnCancelarDocumento">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Documento</button>
+                </div>
+
+                <span class="error-message" id="documentoError"></span>
+                <span class="success-message" id="documentoSuccess"></span>
             </form>
         </div>
     </div>

@@ -57,6 +57,16 @@ const materiaError = document.getElementById('materiaError');
 const materiaSuccess = document.getElementById('materiaSuccess');
 const materiasBody = document.getElementById('materiasBody');
 
+// Modal Documentos Requeridos (documenttypes)
+const btnAgregarDocumento = document.getElementById('btnAgregarDocumento');
+const modalAgregarDocumento = document.getElementById('modalAgregarDocumento');
+const btnCerrarModalDocumento = document.getElementById('btnCerrarModalDocumento');
+const btnCancelarDocumento = document.getElementById('btnCancelarDocumento');
+const formAgregarDocumento = document.getElementById('formAgregarDocumento');
+const documentoError = document.getElementById('documentoError');
+const documentoSuccess = document.getElementById('documentoSuccess');
+const documentosBody = document.getElementById('documentosBody');
+
 // ==========================================
 // ESTADO GLOBAL
 // ==========================================
@@ -64,6 +74,7 @@ let elementoAEliminar = { id: null, tipo: null };
 let editandoEstudianteId = null;
 let editandoCicloId = null;
 let editandoMateriaId = null;
+let editandoDocumentoId = null;
 
 // Estado para Navegación Progresiva en Ciclos
 let cicloSeleccionado = null;
@@ -475,7 +486,8 @@ function mostrarModalEliminar(id, tipo, nombreMostrar = '') {
     const titulosUnidades = {
         estudiantes: 'estudiante',
         ciclos: 'ciclo escolar',
-        materias: 'materia'
+        materias: 'materia',
+        documentos: 'documento requerido'
     };
 
     const unidadTexto = titulosUnidades[tipo] || 'registro';
@@ -527,6 +539,7 @@ if (btnConfirmarEliminar) {
                 if (tipo === 'estudiantes') cargarEstudiantes();
                 else if (tipo === 'ciclos') cargarCiclos();
                 else if (tipo === 'materias') cargarMaterias();
+                else if (tipo === 'documentos') cargarDocumentos();
             } else {
                 alert(`Error: ${data.error || 'No se pudo eliminar el registro'}`);
             }
@@ -618,6 +631,29 @@ function renderizarMaterias(materias) {
     `).join('');
 }
 
+function renderizarDocumentos(documentos) {
+    if (!documentosBody) return;
+    if (!documentos || !documentos.length) {
+        documentosBody.innerHTML = '<tr><td colspan="5">No hay documentos registrados.</td></tr>';
+        return;
+    }
+
+    documentosBody.innerHTML = documentos.map(documento => `
+        <tr>
+            <td>#${escaparHtml(documento.id)}</td>
+            <td>${escaparHtml(documento.name)}</td>
+            <td>${escaparHtml(documento.abbreviation || '-')}</td>
+            <td><span class="badge ${documento.status === 1 || documento.status === true ? 'badge-success' : 'badge-warning'}">
+                ${documento.status === 1 || documento.status === true ? 'Activo' : 'Inactivo'}
+            </span></td>
+            <td>
+                <button class="btn-sm btn-warning" type="button" onclick="abrirModalEditarDocumento(${documento.id})">Editar</button>
+                <button class="btn-sm btn-danger" type="button" onclick="abrirModalEliminarDocumento(${documento.id})">Eliminar</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
 // ==========================================
 // PETICIONES A LA API (CARGA DE DATOS)
 // ==========================================
@@ -663,6 +699,20 @@ async function cargarMaterias() {
     }
 }
 
+async function cargarDocumentos() {
+    try {
+        const response = await fetch('/api/documentos');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Error al cargar documentos');
+        renderizarDocumentos(data);
+    } catch (error) {
+        console.error('Error al cargar documentos:', error);
+        if (documentosBody) {
+            documentosBody.innerHTML = '<tr><td colspan="5">No se pudieron cargar los documentos.</td></tr>';
+        }
+    }
+}
+
 // ==========================================
 // ACCIONES DE ELIMINACIÓN POR MÓDULO
 // ==========================================
@@ -694,6 +744,18 @@ window.abrirModalEliminarMateria = async function(id) {
         if (response.ok) nombre = materia.name;
     } catch (e) {}
     mostrarModalEliminar(id, 'materias', nombre);
+};
+
+window.abrirModalEliminarDocumento = async function(id) {
+    let nombre = `#${id}`;
+    try {
+        const response = await fetch(`/api/documentos/${id}`);
+        const documento = await response.json();
+        if (response.ok) nombre = documento.name;
+    } catch (error) {
+        console.error('Error al obtener documento para eliminar:', error);
+    }
+    mostrarModalEliminar(id, 'documentos', nombre);
 };
 
 // ==========================================
@@ -1123,6 +1185,106 @@ if (formAgregarMateria) {
 }
 
 // ==========================================
+// MODAL CREAR / EDITAR DOCUMENTO REQUERIDO
+// ==========================================
+function cerrarModalDocumento() {
+    if (modalAgregarDocumento) modalAgregarDocumento.classList.add('hidden');
+    if (formAgregarDocumento) formAgregarDocumento.reset();
+    editandoDocumentoId = null;
+    if (documentoError) { documentoError.textContent = ''; documentoError.classList.remove('show'); }
+    if (documentoSuccess) { documentoSuccess.textContent = ''; documentoSuccess.classList.remove('show'); }
+}
+
+function abrirModalCrearDocumento() {
+    cerrarModalDocumento();
+    if (modalAgregarDocumento) {
+        const titulo = modalAgregarDocumento.querySelector('h3');
+        if (titulo) titulo.textContent = 'Agregar Documento';
+        modalAgregarDocumento.classList.remove('hidden');
+    }
+}
+
+window.abrirModalEditarDocumento = async function(id) {
+    try {
+        const response = await fetch(`/api/documentos/${id}`);
+        const documento = await response.json();
+        if (!response.ok) {
+            alert(documento.error || 'No se pudieron obtener los datos del documento');
+            return;
+        }
+
+        editandoDocumentoId = id;
+        document.getElementById('documentoNombre').value = documento.name || '';
+        document.getElementById('documentoAbreviatura').value = documento.abbreviation || '';
+        if (modalAgregarDocumento) {
+            const titulo = modalAgregarDocumento.querySelector('h3');
+            if (titulo) titulo.textContent = 'Editar Documento';
+            modalAgregarDocumento.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Error al obtener documento:', error);
+        alert('Error de conexión al cargar el documento');
+    }
+};
+
+if (btnAgregarDocumento) btnAgregarDocumento.addEventListener('click', abrirModalCrearDocumento);
+if (btnCerrarModalDocumento) btnCerrarModalDocumento.addEventListener('click', cerrarModalDocumento);
+if (btnCancelarDocumento) btnCancelarDocumento.addEventListener('click', cerrarModalDocumento);
+if (modalAgregarDocumento) {
+    modalAgregarDocumento.addEventListener('click', (event) => {
+        if (event.target === modalAgregarDocumento) cerrarModalDocumento();
+    });
+}
+
+if (formAgregarDocumento) {
+    formAgregarDocumento.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (documentoError) { documentoError.textContent = ''; documentoError.classList.remove('show'); }
+
+        const datosDocumento = {
+            name: document.getElementById('documentoNombre').value.trim(),
+            abbreviation: document.getElementById('documentoAbreviatura').value.trim(),
+            iduser: JSON.parse(localStorage.getItem('usuarioActual') || '{}').id
+        };
+        if (!datosDocumento.name) {
+            documentoError.textContent = 'El nombre del documento es requerido';
+            documentoError.classList.add('show');
+            return;
+        }
+
+        const url = editandoDocumentoId ? `/api/documentos/${editandoDocumentoId}` : '/api/documentos';
+        const metodo = editandoDocumentoId ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datosDocumento)
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Error al guardar el documento');
+
+            if (documentoSuccess) {
+                documentoSuccess.textContent = editandoDocumentoId
+                    ? '¡Documento actualizado con éxito!'
+                    : '¡Documento registrado con éxito!';
+                documentoSuccess.classList.add('show');
+            }
+            setTimeout(() => {
+                cerrarModalDocumento();
+                cargarDocumentos();
+            }, 1200);
+        } catch (error) {
+            console.error('Error al guardar documento:', error);
+            if (documentoError) {
+                documentoError.textContent = error.message || 'Error de conexión con el servidor';
+                documentoError.classList.add('show');
+            }
+        }
+    });
+}
+
+// ==========================================
 // SESIÓN Y NAVEGACIÓN
 // ==========================================
 function verificarSesion() {
@@ -1189,6 +1351,8 @@ navLinks.forEach(link => {
                 cargarCiclos();
             } else if (sectionId === 'materias') {
                 cargarMaterias();
+            } else if (sectionId === 'documentos') {
+                cargarDocumentos();
             }
 
             const titleEl = document.getElementById('pageTitle');
