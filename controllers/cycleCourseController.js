@@ -43,7 +43,8 @@ const crearAsignacion = async (req, res) => {
     res.status(201).json({ mensaje: 'Materia asignada al ciclo exitosamente', id: nueva.id });
   } catch (error) {
     console.error('Error al crear asignación:', error);
-    res.status(500).json({ error: error.message || 'No se pudo asignar la materia', detalle: error.message });
+    const status = error.number === 50001 ? 409 : 500;
+    res.status(status).json({ error: error.message || 'No se pudo asignar la materia', detalle: error.message });
   }
 };
 

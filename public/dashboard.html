@@ -309,8 +309,8 @@
 <section id="ciclosescolares" class="section">
     <div class="view-header">
         <div>
-            <h3>Gestión e Inscripción por Ciclos</h3>
-            <p>Sigue los pasos para navegar entre Ciclos, Carreras y Estudiantes</p>
+            <h3>Gestión e Inscripción por Ciclos Escolares</h3>
+            <p>Administra los cursos y estudiantes de cada ciclo escolar</p>
         </div>
         <button class="btn-primary" id="btnAgregarCiclo">+ Agregar Ciclo Escolar</button>
     </div>
@@ -322,7 +322,7 @@
         </button>
         <span class="step-arrow">→</span>
         <button class="step-btn disabled" id="step2Btn" onclick="volverPaso(2)">
-            <span class="step-num">2</span> 2. Carrera / Maestría: <strong id="selectedCarreraText">Ninguna</strong>
+            <span class="step-num">2</span> 2. Curso: <strong id="selectedCarreraText">Ninguno</strong>
         </button>
         <span class="step-arrow">→</span>
         <button class="step-btn disabled" id="step3Btn">
@@ -351,21 +351,21 @@
         </div>
     </div>
 
-    <!-- PASO 2: VISTA DE CARRERAS / MAESTRÍAS DE ESE CICLO -->
+    <!-- PASO 2: CURSOS VINCULADOS AL CICLO -->
     <div id="pasoCarreras" class="step-content hidden">
         <div class="view-header" style="margin-top: 15px;">
-            <h4>Carreras disponibles para este Ciclo</h4>
+            <h4>Cursos disponibles para este ciclo</h4>
         </div>
         <div class="cards-grid" id="carrerasCicloContainer">
             <!-- Cargas dinámicas con JS -->
         </div>
     </div>
 
-    <!-- PASO 3: VISTA DE ALUMNOS EN ESA CARRERA Y CICLO -->
+    <!-- PASO 3: VISTA DE ALUMNOS EN ESE CURSO Y CICLO -->
     <div id="pasoEstudiantes" class="step-content hidden">
         <div class="view-header" style="margin-top: 15px;">
-            <h4>Alumnos Inscritos</h4>
-            <button class="btn-primary" id="btnInscribirEstudianteCiclo">+ Inscribir Alumno a Carrera</button>
+            <h4>Alumnos inscritos en el curso</h4>
+            <button class="btn-primary" id="btnInscribirEstudianteCiclo">+ Inscribir alumno al curso</button>
         </div>
         <div class="table-container">
             <table class="table">

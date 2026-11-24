@@ -88,10 +88,23 @@ class CycleCourse {
         THROW 50001, 'Esta materia ya está asignada a este ciclo', 1;
 
       DECLARE @NextId INT;
-      SELECT @NextId = ISNULL(MAX(id), 0) + 1 FROM cyclecourses;
+      SELECT TOP 1 @NextId = id
+      FROM cyclecourses
+      WHERE idcycle = @idcycle AND idcourse = @idcourse AND status = 0
+      ORDER BY id DESC;
 
-      INSERT INTO cyclecourses (id, idcycle, idcourse, iduser, date, status)
-      VALUES (@NextId, @idcycle, @idcourse, @iduser, GETDATE(), 1);
+      IF @NextId IS NOT NULL
+      BEGIN
+        UPDATE cyclecourses
+        SET status = 1, iduser = @iduser, date = GETDATE()
+        WHERE id = @NextId;
+      END
+      ELSE
+      BEGIN
+        SELECT @NextId = ISNULL(MAX(id), 0) + 1 FROM cyclecourses;
+        INSERT INTO cyclecourses (id, idcycle, idcourse, iduser, date, status)
+        VALUES (@NextId, @idcycle, @idcourse, @iduser, GETDATE(), 1);
+      END
 
       SELECT @NextId AS id;
     `);

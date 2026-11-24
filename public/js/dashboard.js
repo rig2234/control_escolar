@@ -268,30 +268,115 @@ window.seleccionarCiclo = async function(idCiclo, nombreCiclo) {
 async function cargarCarrerasDelCiclo(idCiclo) {
     const container = document.getElementById('carrerasCicloContainer');
     if (!container) return;
-    container.innerHTML = '<p>Cargando materias/cursos...</p>';
+    container.innerHTML = '<p>Cargando cursos...</p>';
 
     try {
-        const response = await fetch('/api/materias');
-        const materias = await response.json();
+        const [materiasResponse, asignacionesResponse] = await Promise.all([
+            fetch('/api/materias'),
+            fetch(`/api/ciclomaterias?idcycle=${encodeURIComponent(idCiclo)}`)
+        ]);
+        const [materias, asignaciones] = await Promise.all([
+            materiasResponse.json(),
+            asignacionesResponse.json()
+        ]);
 
-        if (!response.ok || !materias.length) {
-            container.innerHTML = '<p>No hay materias disponibles.</p>';
+        if (!materiasResponse.ok || !asignacionesResponse.ok) {
+            throw new Error(materias.error || asignaciones.error || 'No se pudieron cargar los cursos');
+        }
+
+        if (!materias.length) {
+            container.innerHTML = '<p>No hay cursos disponibles.</p>';
             return;
         }
 
-        container.innerHTML = materias.map(m => `
-            <div class="carrera-card-select" onclick="seleccionarCarrera(${m.id}, '${escaparHtml(m.name)}')">
-                <h4 style="color: var(--primary); font-size: 16px; margin-bottom: 6px;">${escaparHtml(m.name)}</h4>
-                <p style="font-size: 13px; color: var(--text-light);">${escaparHtml(m.description || 'Sin descripción')}</p>
+        const asignacionesPorCurso = new Map(asignaciones.map(asignacion => [
+            Number(asignacion.idcourse),
+            asignacion
+        ]));
+
+        container.innerHTML = materias.map(materia => {
+            const asignacion = asignacionesPorCurso.get(Number(materia.id));
+            const acciones = asignacion
+                ? `<button class="btn-sm btn-primary" type="button" data-action="seleccionar"
+                    data-course-id="${materia.id}" data-course-name="${escaparHtml(materia.name)}">Ver alumnos</button>
+                   <button class="btn-sm btn-danger" type="button" data-action="desvincular"
+                    data-cycle-course-id="${asignacion.id}" data-course-id="${materia.id}">Desvincular</button>`
+                : `<button class="btn-sm btn-primary" type="button" data-action="vincular"
+                    data-course-id="${materia.id}">Vincular al ciclo</button>`;
+
+            return `
+            <div class="carrera-card-select">
+                <h4 style="color: var(--primary); font-size: 16px; margin-bottom: 6px;">${escaparHtml(materia.name)}</h4>
+                <p style="font-size: 13px; color: var(--text-light);">${asignacion ? 'Vinculado a este ciclo' : 'No vinculado'}</p>
+                <div class="curso-card-actions">${acciones}</div>
             </div>
-        `).join('');
+            `;
+        }).join('');
+
+        container.onclick = async (event) => {
+            const button = event.target.closest('button[data-action]');
+            if (!button) return;
+
+            const idCurso = Number(button.dataset.courseId);
+            if (button.dataset.action === 'seleccionar') {
+                await seleccionarCarrera(idCurso, button.dataset.courseName);
+            } else if (button.dataset.action === 'vincular') {
+                await vincularCursoAlCiclo(idCurso);
+            } else if (button.dataset.action === 'desvincular') {
+                await desvincularCursoDelCiclo(
+                    Number(button.dataset.cycleCourseId),
+                    idCurso,
+                    button.closest('.carrera-card-select').querySelector('h4').textContent
+                );
+            }
+        };
     } catch (error) {
-        console.error('Error al cargar materias:', error);
-        container.innerHTML = '<p>Error al conectar con el servidor.</p>';
+        console.error('Error al cargar cursos del ciclo:', error);
+        container.innerHTML = '<p>No se pudieron cargar los cursos del ciclo.</p>';
     }
 }
 
-// Paso 2 -> Paso 3: Seleccionar una Materia/Curso
+async function vincularCursoAlCiclo(idCurso) {
+    try {
+        const usuarioActual = JSON.parse(localStorage.getItem('usuarioActual') || '{}');
+        const response = await fetch('/api/ciclomaterias', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                idcycle: Number(cicloSeleccionado.id),
+                idcourse: idCurso,
+                iduser: usuarioActual.id
+            })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'No se pudo vincular el curso');
+
+        await cargarCarrerasDelCiclo(cicloSeleccionado.id);
+    } catch (error) {
+        console.error('Error al vincular curso al ciclo:', error);
+        alert(error.message || 'No se pudo vincular el curso al ciclo');
+    }
+}
+
+async function desvincularCursoDelCiclo(idAsignacion, idCurso, nombreCurso) {
+    if (!confirm(`¿Deseas desvincular el curso "${nombreCurso}" de este ciclo?`)) return;
+
+    try {
+        const response = await fetch(`/api/ciclomaterias/${idAsignacion}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'No se pudo desvincular el curso');
+
+        if (carreraSeleccionada && Number(carreraSeleccionada.id) === idCurso) {
+            volverPaso(2);
+        }
+        await cargarCarrerasDelCiclo(cicloSeleccionado.id);
+    } catch (error) {
+        console.error('Error al desvincular curso del ciclo:', error);
+        alert(error.message || 'No se pudo desvincular el curso del ciclo');
+    }
+}
+
+// Paso 2 -> Paso 3: Seleccionar un curso vinculado al ciclo
 window.seleccionarCarrera = async function(idCarrera, nombreCarrera) {
     carreraSeleccionada = { id: idCarrera, name: nombreCarrera };
     
